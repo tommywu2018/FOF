@@ -71,7 +71,7 @@ def Portfolio_Net_Value(code_list, weight_list, previous_nv, today_date):
     else:
         return "Error"
 
-def Index_Performance(code, startdate, enddate):
+def Index_ETF_Performance(code, startdate, enddate):
     wsd_data = Wsd_Data_Install(code, ["pct_chg", "swing", "amt", "free_turn"], startdate, enddate)
     today_data = list(wsd_data.iloc[-1])
     upper_quantile = list(wsd_data.iloc[:-1].quantile(0.9))
@@ -83,7 +83,7 @@ def Index_Performance(code, startdate, enddate):
     data = pd.DataFrame(np.array([today_data, upper_quantile, lower_quantile]), index=[u"今日值", u"上10%分位数", u"下10%分位数"], columns=[u"涨跌幅", u"振幅", u"成交额", u"换手率", u"日内波动率"])
     return data
 
-def Subfund_Performance(code, startdate, enddate):
+def Publicfund_Performance(code, startdate, enddate):
     startdate = str(w.tdaysoffset(-1, startdate).Data[0][0])[:10]
     wsd_data = Wsd_Data_Install(code, "NAV_adj", startdate, enddate).pct_change()
     today_data = wsd_data.iloc[-1,0]
