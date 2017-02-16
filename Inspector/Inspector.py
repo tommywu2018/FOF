@@ -39,8 +39,7 @@ def Intraday_Volatility(code, startdate, enddate, interval):
     enddate = enddate.strftime("%Y-%m-%d")
     date_set = pd.date_range(startdate, enddate, freq="D")
     data = Wsi_Data_Install(code, startdate, enddate, interval)
-    print (data is "no wsi data")
-    if (data is "no wsi data"):
+    if type(data) == str:
         return pd.DataFrame(columns=["intraday_std"])
     else:
         intraday_std_list = list()
@@ -85,11 +84,16 @@ def Index_ETF_Performance(code, startdate, enddate, interval):
     upper_quantile = list(wsd_data.iloc[:-1].quantile(0.9))
     lower_quantile = list(wsd_data.iloc[:-1].quantile(0.1))
     intraday_std_data = Intraday_Volatility(code, startdate, enddate, interval)
-    today_data.append(intraday_std_data.iloc[-1,0])
-    upper_quantile.append(intraday_std_data.iloc[0:-1,0].quantile(0.9))
-    lower_quantile.append(intraday_std_data.iloc[0:-1,0].quantile(0.1))
+    if intraday_std_data.empty:
+        today_data.append(np.nan)
+        upper_quantile.append(np.nan)
+        lower_quantile.append(np.nan)
+    else:
+        today_data.append(intraday_std_data.iloc[-1,0])
+        upper_quantile.append(intraday_std_data.iloc[0:-1,0].quantile(0.9))
+        lower_quantile.append(intraday_std_data.iloc[0:-1,0].quantile(0.1))
     data = pd.DataFrame(np.array([today_data, upper_quantile, lower_quantile]), index=[u"今日值", u"上10%分位数", u"下10%分位数"], columns=[u"涨跌幅", u"振幅", u"成交额", u"换手率", u"日内波动率"])
-    return data
+    return data, wsd_data
 
 def Bondindex_Performance(code, startdate, enddate):
     startdate = str(w.tdaysoffset(-1, startdate).Data[0][0])[:10]
@@ -98,7 +102,7 @@ def Bondindex_Performance(code, startdate, enddate):
     upper_quantile = list(wsd_data.iloc[:-1].quantile(0.9))
     lower_quantile = list(wsd_data.iloc[:-1].quantile(0.1))
     data = pd.DataFrame(np.array([today_data, upper_quantile, lower_quantile]), index=[u"今日值", u"上10%分位数", u"下10%分位数"], columns=[u"涨跌幅", u"成交额"])
-    return data
+    return data, wsd_data
 
 def Publicfund_Performance(code, startdate, enddate):
     startdate = str(w.tdaysoffset(-1, startdate).Data[0][0])[:10]
@@ -107,7 +111,7 @@ def Publicfund_Performance(code, startdate, enddate):
     upper_quantile = wsd_data.iloc[:-1,0].quantile(0.9)
     lower_quantile = wsd_data.iloc[:-1,0].quantile(0.1)
     data = pd.DataFrame(np.array([today_data, upper_quantile, lower_quantile]), index=[u"今日值", u"上10%分位数", u"下10%分位数"], columns=[u"净值涨跌幅"])
-    return data
+    return data, wsd_data
 
 def Xls_Writer(ws, data, rowno, colno, field):
     if field in [u"涨跌幅", u"振幅", u"日内波动率", u"换手率"]:
@@ -131,6 +135,30 @@ def Xls_Writer(ws, data, rowno, colno, field):
     else:
         raise Exception("not defined field!")
 
+def Xls_Writer_pctchg(ws, data, all_data, rowno, colno, field):
+    if field in [u"涨跌幅"]:
+        if data[u"今日值"] < data[u"下10%分位数"]:
+            ws.write(rowno, colno, "%0.3f%%"%data[u"今日值"], style_low)
+        elif data[u"今日值"] > data[u"上10%分位数"]:
+            ws.write(rowno, colno, "%0.3f%%"%data[u"今日值"], style_high)
+        else:
+            ws.write(rowno, colno, "%0.3f%%"%data[u"今日值"], style_normal)
+        pctchg = all_data["PCT_CHG"][:-1]
+        z_score = (all_data["PCT_CHG"][-1] - np.mean(pctchg))/np.std(pctchg)
+        if z_score < -2:
+            ws.write(rowno, colno+1, "%0.3f"%z_score, easyxf("font: colour white;" "pattern: pattern solid, fore_colour purple;" "align: vertical center, horizontal center;" "%s" % border_style))
+        elif (z_score >= -2) and (z_score < -1):
+            ws.write(rowno, colno+1, "%0.3f"%z_score, style_low)
+        elif (z_score >= -1) and (z_score <= 1):
+            ws.write(rowno, colno+1, "%0.3f"%z_score, style_normal)
+        elif (z_score > 1) and (z_score <= 2):
+            ws.write(rowno, colno+1, "%0.3f"%z_score, easyxf("font: colour white;" "pattern: pattern solid, fore_colour orange;" "align: vertical center, horizontal center;" "%s" % border_style))
+        elif z_score > 2:
+            ws.write(rowno, colno+1, "%0.3f"%z_score, style_high)
+        ws.write(rowno+1, colno, "%0.3f%%"%data[u"下10%分位数"], style_quan)
+        ws.write(rowno+1, colno+1, "%0.3f%%"%data[u"上10%分位数"], style_quan)
+    else:
+        raise Exception("not defined field!")
 '''
 close:收盘价
 amt:交易量
@@ -175,18 +203,22 @@ for each in [u"涨跌幅", u"振幅", u"日内波动率", u"成交额(亿元)", 
 row_no = 1
 
 for each_index in stock_index_list:
-    print each_index
-    temp_result = Index_ETF_Performance(each_index, daily_backtest_start_date, today_date, 5)
+    temp_result, all_data = Index_ETF_Performance(each_index, daily_backtest_start_date, today_date, 5)
     ws_index.write_merge(row_no, row_no+1, 0, 0, each_index, style_name)
     col_no = 1
-    for each_field in [u"涨跌幅", u"振幅", u"日内波动率", u"成交额", u"换手率"]:
+    temp_series = temp_result[u"涨跌幅"]
+    Xls_Writer_pctchg(ws_index, temp_series, all_data, row_no, col_no, u"涨跌幅")
+    col_no = col_no + 2
+    for each_field in [u"振幅", u"日内波动率", u"成交额", u"换手率"]:
         temp_series = temp_result[each_field]
         Xls_Writer(ws_index, temp_series, row_no, col_no, each_field)
         col_no = col_no + 2
     row_no = row_no + 2
 
+row_no = row_no + 1
+
 for each_index in bond_index_list:
-    temp_result = Bondindex_Performance(each_index, daily_backtest_start_date, today_date)
+    temp_result, all_data = Bondindex_Performance(each_index, daily_backtest_start_date, today_date)
     ws_index.write_merge(row_no, row_no+1, 0, 0, each_index, style_name)
     col_no = 1
     for each_field in [u"涨跌幅", u"振幅", u"日内波动率", u"成交额", u"换手率"]:
