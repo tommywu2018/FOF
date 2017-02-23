@@ -50,18 +50,44 @@ code_list_jinqu = ["180031.OF", "040035.OF", "000471.OF", "513500.OF", "096001.O
 
 weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 1.00, 5.51, 5.51, 4.20, 4.20, 4.20, 4.20, 6.50, 6.50]
 
+def Nv_Series(codelist, weightlist, startdate, enddate):
+    code_list = codelist
+    weight_list = weightlist
+    if len(code_list) != len(weight_list):
+        raise Exception("codelist, weightlist do not match!")
+    else:
+        weight_list = np.array(weight_list)/100
+        tdays_list = w.tdays("2017-02-01", "2017-02-22")
+        nv_series = pd.Series(index=tdays_list.Times)
+        for each_date in nv_series.index:
+            nv_series[each_date] = Portfolio_Net_Value(code_list, weight_list, 1, each_date)
+        return nv_series.cumprod()
 
-code_list = code_list_jinqu
-weight_list = weight_list_jinqu
-len(code_list) == len(weight_list)
-weight_list = np.array(weight_list)/100
-tdays_list = w.tdays("2017-02-01", "2017-02-19")
+wenjian_series = Nv_Series(code_list_wenjian, weight_list_wenjian, "2017-02-01", "2017-02-22")
+pingheng_series = Nv_Series(code_list_pingheng, weight_list_pingheng, "2017-02-01", "2017-02-22")
+jinqu_series = Nv_Series(code_list_jinqu, weight_list_jinqu, "2017-02-01", "2017-02-22")
 
-nv_series = pd.Series(index=tdays_list.Times)
+nv_data = pd.DataFrame(np.array([wenjian_series.values, pingheng_series.values, jinqu_series.values]).T, index=wenjian_series.index, columns=[u"稳健组合", u"平衡组合", u"进取组合"])
+nv_data.to_excel("D:\\nv_series.xls")
 
-for each_date in nv_series.index:
-    nv_series[each_date] = Portfolio_Net_Value(code_list, weight_list, 1, each_date)
-print "OK!"
+print (nv_data[u"稳健组合"][-1]**(1.0/14.0))**244.0
+print (nv_data[u"平衡组合"][-1]**(1.0/14.0))**244.0
+print (nv_data[u"进取组合"][-1]**(1.0/14.0))**244.0
 
-(nv_series.prod() ** (21/11)) ** 12
+'''
+(nv_series.prod() ** (21/12)) ** 12
 (1.0125123 ** (21/11)) ** 12
+1.0125123 ** 24
+nv_series.cumprod().plot()
+plt.show()
+nv_series
+w.tdayscount("2017-01-01", "2017-12-31")
+
+temp_data = w.wsd("H11001.CSI", "close", "2017-01-26", "2017-02-20")
+
+data = pd.Series(np.array(temp_data.Data[0]), index=temp_data.Times)
+data
+
+test = pd.Series([1,2,3,4])
+pd.DataFrame(np.array([test.values, test.values]))
+'''
