@@ -140,7 +140,7 @@ def Max_Sharpe_Weight(exp_ret, cov_mat, rf_ret):
 
     return weight / weight.sum()
 
-def Max_Utility_Weight(exp_ret, cov_mat, lam):
+def Max_Utility_Weight(exp_ret, cov_mat, lam, bnds):
     '''
     计算夏普比率最大的投资组合的权重
     :param exp_ret: 预期收益率-DataFrame
@@ -161,7 +161,7 @@ def Max_Utility_Weight(exp_ret, cov_mat, lam):
         return -(np.matrix(x) * ret - 0.5 * lam * np.sqrt(np.matrix(x) * omega * np.matrix(x).T))
 
     x0 = np.ones(omega.shape[0]) / omega.shape[0]
-    bnds = tuple((0, None) for x in x0)
+    bnds = tuple(bnds)
     cons = ({'type': 'eq', 'fun': lambda x: sum(x) - 1})
     options = {'disp': False, 'maxiter': 500, 'ftol': 1e-10}
 
