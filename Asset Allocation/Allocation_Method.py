@@ -87,7 +87,7 @@ def Combined_Return_Distribution(lam, cov_mat, tau, mkt_wgt, P, Q, conf_mat):
     #print cov_mat
     equil_ret = Inverse_Minimize(mkt_wgt, cov_mat, lam)
     equil_ret = np.matrix(equil_ret).T
-    #print equil_ret
+    print equil_ret
     cov_mat = np.matrix(cov_mat)
     exp_cov_mat = ((tau * cov_mat).I + (P.T * conf_mat.I * P)).I
     #exp_cov_mat = cov_mat

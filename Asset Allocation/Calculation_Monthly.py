@@ -4,13 +4,14 @@
 @Time: 2017/1/19 09:30
 """
 
+portfolio_name = u"jinqu"
 
 from Allocation_Method import Risk_Parity_Weight, Combined_Return_Distribution, Max_Utility_Weight
 import pandas as pd
 import numpy as np
 
-History_Data = pd.read_excel(u"/文件/博士论文/相关程序/History_data.xlsx")
-Predict_Data = pd.read_excel(u"/文件/博士论文/相关程序/Predict_Data.xlsx")
+History_Data = pd.read_excel(u"/Users/WangBin-Mac/FOF/Asset Allocation/History_data.xlsx")
+Predict_Data = pd.read_excel(u"//Users/WangBin-Mac/FOF/Asset Allocation/Predict_Data.xlsx")
 asset_list = ["bond", "stock_large", "stock_small",
               "stock_HongKong", "stock_US", "gold"]
 bnds = [(0.0, None), (0.0, None), (0.0, None),
@@ -19,10 +20,22 @@ bnds = [(0.0, None), (0.0, None), (0.0, None),
 
 year_delta = 5
 tau = 1.0
-lam = 1.9
+if portfolio_name == "wenjian":
+    lam = 2.3 #进取-1.9 平衡-2.0 稳健-2.3
+    money_weight = 0.75
+elif portfolio_name == "pingheng":
+    lam = 2.0
+    money_weight = 0.8
+elif portfolio_name == "jinqu":
+    lam = 1.9
+    money_weight = 0.85
+else:
+    raise Exception("Wrong portfolio_name!")
+
+
 # 日期设定
-last_date = History_Data.index[-1]  # 当前月份日期
-next_date = Predict_Data.index[-1]  # 下一月份日期
+last_date = History_Data.index[-2]  # 当前月份日期
+next_date = Predict_Data.index[-2]  # 下一月份日期
 if last_date.month <= 11:
     start_year = last_date.year - year_delta
     start_month = last_date.month + 1
@@ -50,11 +63,13 @@ for each in asset_list:
 conf_mat = np.matrix(np.diag(conf_list))
 
 Q = np.matrix(Predict_Data[asset_list].loc[next_date])
-print Q
+
 
 com_ret, com_cov_mat = Combined_Return_Distribution(
     2, cov_mat, tau, mkt_wgt, P, Q, conf_mat)
-# print com_cov_mat
+
+print com_ret
+
 weight_bl = Max_Utility_Weight(com_ret, com_cov_mat, lam, bnds)
 
-print weight_bl
+print weight_bl * money_weight
