@@ -57,23 +57,30 @@ def Nv_Series(codelist, weightlist, startdate, enddate):
         raise Exception("codelist, weightlist do not match!")
     else:
         weight_list = np.array(weight_list)/100
-        tdays_list = w.tdays("2017-02-01", "2017-02-22")
+        tdays_list = w.tdays(startdate, enddate)
         nv_series = pd.Series(index=tdays_list.Times)
         for each_date in nv_series.index:
             nv_series[each_date] = Portfolio_Net_Value(code_list, weight_list, 1, each_date)
         return nv_series.cumprod()
 
-wenjian_series = Nv_Series(code_list_wenjian, weight_list_wenjian, "2017-02-01", "2017-02-22")
-pingheng_series = Nv_Series(code_list_pingheng, weight_list_pingheng, "2017-02-01", "2017-02-22")
-jinqu_series = Nv_Series(code_list_jinqu, weight_list_jinqu, "2017-02-01", "2017-02-22")
+wenjian_series = Nv_Series(code_list_wenjian, weight_list_wenjian, "2017-02-01", "2017-02-28")
+pingheng_series = Nv_Series(code_list_pingheng, weight_list_pingheng, "2017-02-01", "2017-02-28")
+jinqu_series = Nv_Series(code_list_jinqu, weight_list_jinqu, "2017-02-01", "2017-02-28")
 
 nv_data = pd.DataFrame(np.array([wenjian_series.values, pingheng_series.values, jinqu_series.values]).T, index=wenjian_series.index, columns=[u"稳健组合", u"平衡组合", u"进取组合"])
-nv_data.to_excel("D:\\nv_series.xls")
+nv_data.to_excel("D:\\FOF\\nv_series.xls")
 
-print (nv_data[u"稳健组合"][-1]**(1.0/14.0))**244.0
-print (nv_data[u"平衡组合"][-1]**(1.0/14.0))**244.0
-print (nv_data[u"进取组合"][-1]**(1.0/14.0))**244.0
+feb_tdays = w.tdayscount("2017-02-01", "2017-02-28").Data[0][0]
 
+year_tdays = w.tdayscount("2017-02-01", "2018-01-31").Data[0][0]
+
+print (nv_data[u"稳健组合"][-1]**(1.0/feb_tdays))**year_tdays
+print (nv_data[u"平衡组合"][-1]**(1.0/feb_tdays))**year_tdays
+print (nv_data[u"进取组合"][-1]**(1.0/feb_tdays))**year_tdays
+
+print nv_data[u"稳健组合"][-1]**12.0
+print nv_data[u"平衡组合"][-1]**12.0
+print nv_data[u"进取组合"][-1]**12.0
 '''
 (nv_series.prod() ** (21/12)) ** 12
 (1.0125123 ** (21/11)) ** 12

@@ -30,7 +30,7 @@ def Portfolio_Return(codelist, weightlist, startdate, enddate):
         for j in range(len(codelist)):
             contri = (pct_chg_list[j] * weightlist[j])/nv_pct_chg
             contri_list.append(contri)
-        contri_series = pd.Series(contri_list, index=codelist)
+        contri_series = pd.DataFrame(np.array([pct_chg_list, contri_list, weightlist]).T, index=codelist, columns=[u"涨幅", u"贡献率", u"权重"])
         return nv_pct_chg, contri_series
     else:
         raise Exception("missing data!")
@@ -51,10 +51,54 @@ def Portfolio_Index_Return(codelist, weightlist, startdate, enddate):
         for j in range(len(codelist)):
             contri = (pct_chg_list[j] * weightlist[j])/nv_pct_chg
             contri_list.append(contri)
-        contri_series = pd.Series(contri_list, index=codelist)
+        contri_series = pd.DataFrame(np.array([pct_chg_list, contri_list]).T, index=codelist, columns=[u"涨幅", u"贡献率"])
         return nv_pct_chg, contri_series
     else:
         raise Exception("missing data!")
+
+def Return_Decomposition(indexn, fund, indexweight, fundweight, port_name):
+    indexreturn, index_decom = Portfolio_Index_Return(indexn, (np.array(indexweight)/100.0), start_date, end_date)
+    fundreturn, fund_decom = Portfolio_Return(fund, (np.array(fundweight)/100.0), start_date, end_date)
+    index_fund_return_list = list()
+    for each_index in index_decom.index:
+        index_fund_return = list()
+        index_fund_contri = list()
+        index_fund_weight = list()
+        for each_fund in fund_decom.index:
+            if each_fund in index_fund_map[each_index]:
+                index_fund_return.append(fund_decom[u"权重"][each_fund] * fund_decom[u"涨幅"][each_fund])
+                index_fund_contri.append(fund_decom[u"贡献率"][each_fund])
+                index_fund_weight.append(fund_decom[u"权重"][each_fund])
+        index_fund_return_list.append([sum(index_fund_return)/sum(index_fund_weight), sum(index_fund_contri)])
+    index_fund_decom = pd.DataFrame(np.array(index_fund_return_list), index=indexn, columns=[u"子基金组合收益率", u"子基金组合贡献率"])
+    index_decom_new = pd.merge(index_decom, index_fund_decom, left_index=True, right_index=True)
+    index_decom_new.index = w.wss(indexn, "sec_name").Data[0]
+    index_decom_new.to_excel("D:\\FOF\\index_decom_" + port_name + ".xlsx")
+
+    fund_index_return = list()
+    for each_fund in fund_decom.index:
+        indicator = 0
+        for each_index in index_decom.index:
+            if each_fund in index_fund_map[each_index]:
+                fund_index_return.append(index_decom[u"涨幅"][each_index])
+                indicator = 1
+        if indicator == 1:
+            pass
+        else:
+            raise Exception(each_fund + " not in index_fund_map!")
+    fund_index_decom = pd.DataFrame(fund_index_return, index=fund, columns=[u"指数涨跌幅"])
+    fund_decom_new = pd.merge(fund_decom[[u"涨幅", u"贡献率"]], fund_index_decom, left_index=True, right_index=True)
+    fund_decom_new = pd.DataFrame(fund_decom_new.values, index=w.wss(fund, "sec_name").Data[0], columns=fund_decom_new.columns)
+    fund_decom_new = fund_decom_new.reindex(columns=[u"贡献率", u"涨幅", u"指数涨跌幅"])
+    fund_decom_new.to_excel("D:\\FOF\\fund_decom_" + port_name + ".xlsx")
+
+index_fund_map = {"000300.SH" : ["163415.OF", "090013.OF", "000308.OF", "519736.OF", "000577.OF"],
+"000905.SH" : ["180031.OF", "000547.OF", "000524.OF", "040035.OF", "000471.OF"],
+"SPX.GI" : ["513500.OF", "519981.OF", "096001.OF", "513100.OF"],
+"HSI.HI" : ["159920.OF", "513660.OF"],
+"H11001.CSI" : ["511220.OF", "001021.OF", "003358.OF", "511010.OF", "161821.OF", "159926.OF", "001512.OF", "000022.OF"],
+"AU9999.SGE" : ["518880.OF", "159937.OF", "159934.OF", "320013.OF", "518800.OF"],
+"H11025.CSI" : ["003022.OF", "000434.OF"]}
 
 code_list_wenjian = ["180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "159926.OF", "003358.OF", "001512.OF", "511010.OF", "161821.OF", "000022.OF",
@@ -77,13 +121,13 @@ weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 1.00, 5.5
 
 index_code_list = ["000300.SH", "000905.SH", "SPX.GI", "HSI.HI", "H11001.CSI", "AU9999.SGE", "H11025.CSI"]
 
-index_weight_wenjian = [0.00, 4.47, 7.56, 8.66, 46.88, 7.43, 25.00]
-index_weight_pingheng = [0.00, 7.56, 9.58, 14.55, 36.50, 11.81, 20.00]
-index_weight_jinqu = [0.00, 11.09, 11.83, 21.27, 24.02, 16.80, 15.00]
+index_weight_wenjian = [0.00, 4.47, 7.56, 8.66, 31.25, 7.43, 25.00]
+index_weight_pingheng = [0.00, 7.56, 9.58, 14.55, 18.25, 11.81, 20.00]
+index_weight_jinqu = [0.00, 11.09, 11.83, 21.27, 12.01, 16.80, 15.00]
 
 start_date = "2017-02-01"
 end_date = "2017-02-28"
 
-Portfolio_Index_Return(index_code_list, (np.array(index_weight_jinqu)/100.0), start_date, end_date)
-
-Portfolio_Return(code_list_jinqu, (np.array(weight_list_jinqu)/100.0), start_date, end_date)
+Return_Decomposition(index_code_list, code_list_wenjian, index_weight_wenjian, weight_list_wenjian, "wenjian")
+Return_Decomposition(index_code_list, code_list_pingheng, index_weight_pingheng, weight_list_pingheng, "pingheng")
+Return_Decomposition(index_code_list, code_list_jinqu, index_weight_jinqu, weight_list_jinqu, "jinqu")
