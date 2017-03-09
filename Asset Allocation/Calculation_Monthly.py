@@ -34,8 +34,8 @@ else:
 
 
 # 日期设定
-last_date = History_Data.index[-2]  # 当前月份日期
-next_date = Predict_Data.index[-2]  # 下一月份日期
+last_date = History_Data.index[-1]  # 当前月份日期
+next_date = Predict_Data.index[-1]  # 下一月份日期
 if last_date.month <= 11:
     start_year = last_date.year - year_delta
     start_month = last_date.month + 1

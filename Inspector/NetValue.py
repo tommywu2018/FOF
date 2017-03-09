@@ -31,24 +31,24 @@ def Portfolio_Net_Value(code_list, weight_list, previous_nv, today_date):
     else:
         raise Exception("missing data!")
 
-code_list_wenjian = ["180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
+code_list_wenjian = ["163415.OF", "180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "159926.OF", "003358.OF", "001512.OF", "511010.OF", "161821.OF", "000022.OF",
 "518880.OF", "159934.OF", "003022.OF", "000434.OF"]
 
-weight_list_wenjian = [4.47, 3.78, 3.78, 4.33, 4.33, 5.00, 5.00, 5.00, 6.25, 5.00, 5.00,
-3.72, 3.72, 10.00, 10.00]
+weight_list_wenjian = [0.54, 2.50, 4.55, 4.50, 3.75, 3.75, 5.00, 5.00, 5.00, 6.25, 5.00, 5.00,
+3.72, 3.72, 10.60, 10.49]
 
-code_list_pingheng = ["180031.OF", "040035.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
+code_list_pingheng = ["163415.OF", "180031.OF", "040035.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "159926.OF", "511010.OF",
 "518880.OF", "159934.OF", "003022.OF", "000434.OF"]
 
-weight_list_pingheng = [3.78, 3.78, 4.79, 4.79, 7.27, 7.27, 1.00, 5.75, 5.75, 5.75, 5.90, 5.90, 8.00, 8.00]
+weight_list_pingheng = [0.47, 2.00, 1.93, 5.87, 5.50, 5.85, 5.50, 1.00, 5.75, 5.75, 5.75, 5.90, 5.90, 9.80, 9.75]
 
-code_list_jinqu = ["180031.OF", "040035.OF", "000471.OF", "513500.OF", "096001.OF", "513100.OF", "159920.OF", "513660.OF",
+code_list_jinqu = ["163415.OF", "180031.OF", "040035.OF", "000471.OF", "513500.OF", "096001.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "511010.OF",
 "518880.OF", "159934.OF", "159937.OF", "518800.OF", "003022.OF", "000434.OF"]
 
-weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 1.00, 5.51, 5.51, 4.20, 4.20, 4.20, 4.20, 6.50, 6.50]
+weight_list_jinqu = [0.41, 2.06, 2.06, 1.00, 4.46, 4.45, 4.45, 7.56, 7.00, 1.00, 5.51, 5.51, 4.20, 4.20, 4.20, 4.20, 10.35, 10.35]
 
 def Nv_Series(codelist, weightlist, startdate, enddate):
     code_list = codelist
@@ -63,13 +63,13 @@ def Nv_Series(codelist, weightlist, startdate, enddate):
             nv_series[each_date] = Portfolio_Net_Value(code_list, weight_list, 1, each_date)
         return nv_series.cumprod()
 
-wenjian_series = Nv_Series(code_list_wenjian, weight_list_wenjian, "2017-02-01", "2017-02-28")
-pingheng_series = Nv_Series(code_list_pingheng, weight_list_pingheng, "2017-02-01", "2017-02-28")
-jinqu_series = Nv_Series(code_list_jinqu, weight_list_jinqu, "2017-02-01", "2017-02-28")
+wenjian_series = Nv_Series(code_list_wenjian, weight_list_wenjian, "2017-03-01", "2017-03-8")
+pingheng_series = Nv_Series(code_list_pingheng, weight_list_pingheng, "2017-03-01", "2017-03-8")
+jinqu_series = Nv_Series(code_list_jinqu, weight_list_jinqu, "2017-03-01", "2017-03-8")
 
 nv_data = pd.DataFrame(np.array([wenjian_series.values, pingheng_series.values, jinqu_series.values]).T, index=wenjian_series.index, columns=[u"稳健组合", u"平衡组合", u"进取组合"])
-nv_data.to_excel("D:\\FOF\\nv_series.xls")
-
+nv_data.to_excel(u"E:\\研究生资料\\路透实验室\\FOF投顾\\201704报告\\nv_series.xls")
+'''
 feb_tdays = w.tdayscount("2017-02-01", "2017-02-28").Data[0][0]
 
 year_tdays = w.tdayscount("2017-02-01", "2018-01-31").Data[0][0]
@@ -81,6 +81,7 @@ print (nv_data[u"进取组合"][-1]**(1.0/feb_tdays))**year_tdays
 print nv_data[u"稳健组合"][-1]**12.0
 print nv_data[u"平衡组合"][-1]**12.0
 print nv_data[u"进取组合"][-1]**12.0
+'''
 '''
 (nv_series.prod() ** (21/12)) ** 12
 (1.0125123 ** (21/11)) ** 12

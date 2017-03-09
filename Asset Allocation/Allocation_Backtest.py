@@ -3,75 +3,85 @@
 @author: Wang Bin
 """
 
+portfolio_name = u"wenjian"
+
 from Allocation_Method import Risk_Parity_Weight, Min_Variance_Weight, Combined_Return_Distribution, Max_Sharpe_Weight, Max_Utility_Weight, Inverse_Minimize
 import pandas as pd
 import numpy as np
 
-def Performance(file_path, rf_ret):
-    data = pd.read_excel(file_path)
-    return_series = data['return']
-    weight_mean = data[['H11001.CSI', '000300.SH', 'AU9999.SGE']].mean()
-    end_value = (return_series + 1).prod()
-    annual_return = (return_series + 1).prod() ** (1/(len(data)/12.0)) - 1
-    annual_variance = (return_series.var() * 12.0) ** 0.5
-    sharpe_ratio = (annual_return - rf_ret)/annual_variance
-    max_drawdown = max(((return_series + 1).cumprod().cummax()-(return_series + 1).cumprod())/(return_series + 1).cumprod().cummax())
-    (return_series + 1).cumprod().plot()
-    return [end_value, annual_return, annual_variance, sharpe_ratio, max_drawdown] + list(weight_mean.values)
+Initial_Data = pd.read_excel("D:\\chengww_ini.xlsx")/100
+History_Data = pd.read_excel("D:\\chengww.xlsx")/100
+Predict_Data = pd.read_excel("D:\\chengww_pre_12.xlsx")/100
+asset_list = ["000905.SH", "399975.SZ", "399967.SZ", "000993.SH", "000900.SZ",
+              "399006.SZ", "AU9999.SGE", "H11001.CSI"]
+hedge_list = ["000905.SH", "399975.SZ", "399967.SZ", "000993.SH", "000900.SZ", "399006.SZ"]
+bnds = [(0.0, None), (0.0, None), (0.0, None), (0.0, None),
+        (0.0, None), (0.0, None), (0.0, None), (0.0, None)]
+#bnds = [(0.1, 0.6), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.0, 0.3)]
 
-risk_level_list = ['high', 'middle', 'low']
-#确定使用的数据文件
-file_name_list = ['Index_Return_funds_future']
+year_delta = 3
+tau = 1.0
+if portfolio_name == "wenjian":
+    lam = 2.3 #进取-1.9 平衡-2.0 稳健-2.3
+    money_weight = 0.75
+elif portfolio_name == "pingheng":
+    lam = 2.0
+    money_weight = 0.8
+elif portfolio_name == "jinqu":
+    lam = 1.9
+    money_weight = 0.85
+else:
+    raise Exception("Wrong portfolio_name!")
 
-results_list = list()
-for file_name in file_name_list:
-    for risk_level in risk_level_list:
+pct_list = []
+weight_list = []
+date_list = []
+for each_date in Predict_Data.index[36:]:
+    last_date = History_Data.index[list(Predict_Data.index).index(each_date)-1]  # 当前月份日期
+    next_date = each_date  # 下一月份日期
+    if last_date.month <= 11:
+        start_year = last_date.year - year_delta
+        start_month = last_date.month + 1
+    else:
+        start_year = last_date.year - year_delta + 1
+        start_month = 1
 
-        if risk_level == 'high':
-            lam = 1.0
-        elif risk_level == 'middle':
-            lam = 1.15
-        elif risk_level == 'low':
-            lam = 1.5
-        else:
-            pass
+    # 基础设定
+    history_data = History_Data[asset_list][
+        str(start_year) + '-' + str(start_month): last_date]
+    predict_data = Predict_Data[asset_list][
+        str(start_year) + '-' + str(start_month): last_date]
+    cov_mat = history_data[asset_list].cov() * 12.0
+    # print cov_mat
+    omega = np.matrix(cov_mat.values)
+    mkt_wgt = Risk_Parity_Weight(cov_mat)
+    #print mkt_wgt
+    '''
+    P = np.diag([1] * len(mkt_wgt))
 
-        ret_data = pd.read_excel(file_name + '.xlsx')
-        return_data = pd.read_excel('Index_Return_funds.xlsx')
+    conf_list = list()
+    for each in asset_list:
+        conf_temp = ((history_data[each][str(start_year) + '-' + str(start_month):] -
+                      predict_data[each][str(start_year) + '-' + str(start_month):])**2).mean() * 12.0
+        conf_list.append(conf_temp)
+    conf_mat = np.matrix(np.diag(conf_list))
 
-        year_delta = 5
+    Q = np.matrix(Predict_Data[asset_list].loc[next_date])
 
-        tau = 1.0
-        wl_bl = list()
-        for each in ret_data.index[60:]:
-            year = each.year - year_delta
-            month = each.month
-            history_data = ret_data[str(year)+'-'+str(month): each][:-1]
-            year_o = each.year - 2
-            cov_mat = history_data[['H11001.CSI', '000300.SH', 'AU9999.SGE']].cov() * 12.0
-            omega = np.matrix(cov_mat.values)
-            mkt_wgt = Risk_Parity_Weight(cov_mat)
-            P = np.diag([1] * len(mkt_wgt))
-            conf_mat = np.matrix(np.diag([((history_data['H11001.CSI'][str(year_o)+'-'+str(month):]-history_data['Bond_pre'][str(year_o)+'-'+str(month):])**2).mean() * 12.0,
-                                          ((history_data['000300.SH'][str(year_o)+'-'+str(month):]-history_data['Stock_pre'][str(year_o)+'-'+str(month):])**2).mean() * 12.0,
-                                          ((history_data['AU9999.SGE'][str(year_o)+'-'+str(month):]-history_data['Gold_pre'][str(year_o)+'-'+str(month):])**2).mean() * 12.0]))
-            Q = np.matrix(ret_data[['Bond_pre', 'Stock_pre', 'Gold_pre']].loc[each])
-            com_ret, com_cov_mat = Combined_Return_Distribution(3, cov_mat, tau, mkt_wgt, P, Q, conf_mat)
-            weight_bl = Max_Utility_Weight(com_ret, com_cov_mat, lam)
-            wl_bl.append(list(weight_bl) + [(np.matrix(return_data[['H11001.CSI', '000300.SH', 'AU9999.SGE']].loc[each]) * np.matrix(weight_bl).T)[0,0]])
+    com_ret, com_cov_mat = Combined_Return_Distribution(
+        2, cov_mat, tau, mkt_wgt, P, Q, conf_mat)
 
-        wl_bl = pd.DataFrame(np.array(wl_bl), index=ret_data.index[60:], columns=list(ret_data[['H11001.CSI', '000300.SH', 'AU9999.SGE']].columns)+['return'])
-        wl_bl.to_excel(file_name + '_funds_' + risk_level + '.xlsx')
+    #print com_ret
 
-        print Performance(file_name + '_funds_' + risk_level + '.xlsx', 0.025)
-        results_list.append(Performance(file_name + '_funds_' + risk_level + '.xlsx', 0.025))
+    weight_bl = Max_Utility_Weight(com_ret, com_cov_mat, lam, bnds)
+    '''
+    weight_bl = mkt_wgt
+    print sum(weight_bl*Initial_Data[asset_list].loc[next_date]) - Initial_Data["IF.CFE"][next_date]*sum(weight_bl[hedge_list])
+    pct_list.append(sum(weight_bl*Initial_Data[asset_list].loc[next_date]) - Initial_Data["IF.CFE"][next_date]*sum(weight_bl[hedge_list])+1)
+    weight_list.append(list(weight_bl))
+    date_list.append(next_date)
 
-pd.DataFrame(np.array(results_list)).to_excel('results_funds_pre.xlsx')
+pd.Series(np.array(pct_list).cumprod(), index=date_list).to_csv("D:\\chengww_rp.csv")
+pd.DataFrame(np.array(weight_list), index=date_list, columns=asset_list).to_excel("D:\\chengww_rp_weight.xlsx")
 
-'''
-results_list = list()
-results_list.append(Performance('Index_Return_high_adjusted.xlsx', 0.025))
-results_list.append(Performance('Index_Return_middle_adjusted.xlsx', 0.025))
-results_list.append(Performance('Index_Return_low_adjusted.xlsx', 0.025))
-pd.DataFrame(np.array(results_list)).to_excel('results_adjusted.xlsx')
-'''
+print np.array(pct_list).cumprod()[-1]
