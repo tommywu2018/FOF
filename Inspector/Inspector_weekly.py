@@ -219,7 +219,7 @@ def Xls_Writer_pctchg_Simple(ws, data, all_data, rowno, colno, field):
 
 
 forwardweeks = 54 #数据应包含上周数据及之前52周
-enddate = "2017-02-17"
+enddate = "2017-03-10"
 
 '''
 格式定义
@@ -304,22 +304,22 @@ ws_industry.write_merge(0, 0, col_no, col_no+1, u"涨跌幅", style_quan)
 col_no = col_no + 2
 for each in [u"振幅", u"成交额(亿元)", u"换手率"]:
     ws_industry.write(0, col_no, each, style_quan)
-    col_no = col_no + 1
+    col_no = col_no + 2
 
 row_no = 1
 
 for each_index in industry_list:
     temp_result, all_data = Index_Performance(each_index, enddate, forwardweeks)
-    ws_industry.write(row_no, 0, industry_name[industry_list.index(each_index)], style_name)
+    ws_industry.write_merge(row_no, row_no+1, 0, 0, industry_name[industry_list.index(each_index)], style_name)
     col_no = 1
     temp_series = temp_result[u"涨跌幅"]
-    Xls_Writer_pctchg_Simple(ws_industry, temp_series, all_data, row_no, col_no, u"涨跌幅")
+    Xls_Writer_pctchg(ws_industry, temp_series, all_data, row_no, col_no, u"涨跌幅")
     col_no = col_no + 2
     for each_field in [u"振幅",  u"成交额", u"换手率"]:
         temp_series = temp_result[each_field]
-        Xls_Writer_Simple(ws_industry, temp_series, row_no, col_no, each_field)
-        col_no = col_no + 1
-    row_no = row_no + 1
+        Xls_Writer(ws_industry, temp_series, row_no, col_no, each_field)
+        col_no = col_no + 2
+    row_no = row_no + 2
 
 
 ws_commodity = ws.add_sheet(u"商品指数")
