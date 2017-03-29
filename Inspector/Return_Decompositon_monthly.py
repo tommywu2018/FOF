@@ -60,7 +60,7 @@ def Portfolio_Index_Return(codelist, weightlist, startdate, enddate):
         raise Exception("missing data!")
 
 def Return_Decomposition(indexn, fund, indexweight, fundweight, port_name):
-    indexreturn, index_decom, nav_data = Portfolio_Index_Return(indexn, (np.array(indexweight)/100.0), start_date, end_date)
+    indexreturn, index_decom = Portfolio_Index_Return(indexn, (np.array(indexweight)/100.0), start_date, end_date)
     fundreturn, fund_decom, nav_data = Portfolio_Return(fund, (np.array(fundweight)/100.0), start_date, end_date)
     index_fund_return_list = list()
     for each_index in index_decom.index:
@@ -116,23 +116,30 @@ code_list_wenjian = ["180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660
 
 weight_list_wenjian = [4.47, 3.78, 3.78, 4.33, 4.33, 5.00, 5.00, 5.00, 6.25, 5.00, 5.00,
 3.72, 3.72, 10.00, 10.00]
+weight_list_wenjian = [4.47, 3.78, 3.78, 4.33, 4.33, 7.60, 7.60, 7.60, 8.88, 7.60, 7.60,
+3.72, 3.72, 10.00, 10.00]
 
 code_list_pingheng = ["180031.OF", "040035.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "159926.OF", "511010.OF",
 "518880.OF", "159934.OF", "003022.OF", "000434.OF"]
 
 weight_list_pingheng = [3.78, 3.78, 4.79, 4.79, 7.27, 7.27, 1.00, 5.75, 5.75, 5.75, 5.90, 5.90, 8.00, 8.00]
+weight_list_pingheng = [3.78, 3.78, 4.79, 4.79, 7.27, 7.27, 5.57, 10.32, 10.32, 10.32, 5.90, 5.90, 8.00, 8.00]
 
 code_list_jinqu = ["180031.OF", "040035.OF", "000471.OF", "513500.OF", "096001.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "511010.OF",
 "518880.OF", "159934.OF", "159937.OF", "518800.OF", "003022.OF", "000434.OF"]
 
 weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 1.00, 5.51, 5.51, 4.20, 4.20, 4.20, 4.20, 6.50, 6.50]
+weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 5.01, 9.52, 9.52, 4.20, 4.20, 4.20, 4.20, 6.50, 6.50]
+
 
 index_weight_wenjian = [0.00, 4.47, 7.56, 8.66, 31.25, 7.43, 25.00]
 index_weight_pingheng = [0.00, 7.56, 9.58, 14.55, 18.25, 11.81, 20.00]
 index_weight_jinqu = [0.00, 11.09, 11.83, 21.27, 12.01, 16.80, 15.00]
-
+index_weight_wenjian = [0.00, 4.47, 7.56, 8.66, 46.88, 7.43, 25.00]
+index_weight_pingheng = [0.00, 7.56, 9.58, 14.55, 36.50, 11.81, 20.00]
+index_weight_jinqu = [0.00, 11.09, 11.83, 21.27, 24.02, 16.80, 15.00]
 '''
 #三月组合权重
 code_list_wenjian = ["163415.OF", "180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
@@ -141,22 +148,29 @@ code_list_wenjian = ["163415.OF", "180031.OF", "513500.OF", "513100.OF", "159920
 
 weight_list_wenjian = [0.54, 2.50, 4.55, 4.55, 3.75, 3.75, 5.00, 5.00, 5.00, 6.25, 5.00, 5.00,
 3.72, 3.72, 10.60, 10.49]
+weight_list_wenjian = [0.54, 2.50, 4.55, 4.55, 3.75, 3.75, 7.60, 7.60, 7.60, 8.88, 7.60, 7.60,
+3.72, 3.72, 10.60, 10.49]
 
 code_list_pingheng = ["163415.OF", "180031.OF", "040035.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "159926.OF", "511010.OF",
 "518880.OF", "159934.OF", "003022.OF", "000434.OF"]
 
 weight_list_pingheng = [0.47, 2.00, 1.93, 5.87, 5.50, 5.85, 5.50, 1.00, 5.75, 5.75, 5.75, 5.90, 5.90, 9.80, 9.75]
+weight_list_pingheng = [0.47, 2.00, 1.93, 5.87, 5.50, 5.85, 5.50, 5.57, 10.32, 10.32, 10.32, 5.90, 5.90, 9.80, 9.75]
 
 code_list_jinqu = ["163415.OF", "180031.OF", "040035.OF", "000471.OF", "513500.OF", "096001.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "511010.OF",
 "518880.OF", "159934.OF", "159937.OF", "518800.OF", "003022.OF", "000434.OF"]
 
 weight_list_jinqu = [0.41, 2.06, 2.06, 1.00, 4.46, 4.45, 4.45, 7.56, 7.00, 1.00, 5.51, 5.51, 4.20, 4.20, 4.20, 4.20, 10.35, 10.35]
+weight_list_jinqu = [0.41, 2.06, 2.06, 1.00, 4.46, 4.45, 4.45, 7.56, 7.00, 5.01, 9.52, 9.52, 4.20, 4.20, 4.20, 4.20, 10.35, 10.35]
 
 index_weight_wenjian = [0.54, 2.50, 9.05, 7.50, 31.25, 7.43, 26.11]
 index_weight_pingheng = [0.47, 3.93, 11.37, 11.35, 18.25, 11.81, 24.57]
 index_weight_jinqu = [0.41, 5.12, 13.36, 14.56, 12.01, 16.80, 25.73]
+index_weight_wenjian = [0.54, 2.50, 9.05, 7.50, 46.88, 7.43, 26.11]
+index_weight_pingheng = [0.47, 3.93, 11.37, 11.35, 36.50, 11.81, 24.57]
+index_weight_jinqu = [0.41, 5.12, 13.36, 14.56, 24.02, 16.80, 25.73]
 '''
 
 start_date = "2017-02-01"
