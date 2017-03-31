@@ -6,7 +6,7 @@ import pyper as pr
 from Allocation_Method import Risk_Parity_Weight
 
 #Simulation
-def Ms_Simulation(length, p=0.9, q=0.7, mean_p=0.05, mean_q=-0.1, std_p=0.1, std_q=0.15):
+def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std_q=0.15):
     temp_list = []
     indicator = 1
     for i in range(length):
@@ -136,27 +136,38 @@ print max(ratio_list)
 print min(ratio_list)
 print np.mean(ratio_list)
 '''
-test_list_1 = Ms_Simulation(350)
-test_list_2 = Ms_Simulation(350)
-ms_list = []
-bm_list = []
-for i in range(100):
-    tl_cut_1 = test_list_1[:250+i]
-    tl_cut_2 = test_list_2[:250+i]
-    test_frame = pd.DataFrame(np.array([tl_cut_1,tl_cut_2]).T, columns=['A','B'])
-    wgt = Ms_RP(test_frame, {'A':True, 'B':True})
-    '''
-    wgt = pd.Series([0.6, 0.4], index=['A','B'])
-    '''
-    ms_return = wgt['A']*test_list_1[250+i] + wgt['B']*test_list_2[250+i]
-    bm_return = (test_list_1[250+i] + test_list_2[250+i])/2
-    print ms_return
-    print bm_return
-    ms_list.append(ms_return)
-    bm_list.append(bm_return)
+MS_list = []
+BM_list = []
+for each in range(100):
+    test_list_1 = Ms_Simulation(350)
+    test_list_2 = Ms_Simulation(350)
+    ms_list = []
+    bm_list = []
+    for i in range(100):
+        tl_cut_1 = test_list_1[:250+i]
+        tl_cut_2 = test_list_2[:250+i]
+        test_frame = pd.DataFrame(np.array([tl_cut_1,tl_cut_2]).T, columns=['A','B'])
 
-print (pd.Series(ms_list)+1).prod()
-print (pd.Series(bm_list)+1).prod()
+        wgt = Ms_RP(test_frame, {'A':True, 'B':True})
+        '''
+        wgt = pd.Series([0.6, 0.4], index=['A','B'])
+        '''
+        ms_return = wgt['A']*test_list_1[250+i] + wgt['B']*test_list_2[250+i]
+        bm_return = (test_list_1[250+i] + test_list_2[250+i])/2
+        #print ms_return
+        #print bm_return
+        ms_list.append(ms_return)
+        bm_list.append(bm_return)
+
+    MS_list.append((pd.Series(ms_list)+1).prod())
+    BM_list.append((pd.Series(bm_list)+1).prod())
+    print str(each)
+    print (pd.Series(ms_list)+1).prod()
+    print (pd.Series(bm_list)+1).prod()
+    print "-----"
+
+print np.mean(MS_list)
+print np.mean(BM_list)
 '''
 $std
 $model
@@ -179,5 +190,3 @@ $Fit
     slot"logLikel"
 $class
 '''
-test = [1,2,3,4]
-test[3]

@@ -59,6 +59,7 @@ def Index_decomposition(index_universe, rebalance_times, end_date, weights_list)
             if (temp_start_date.ErrorCode != 0) or (temp_end_date.ErrorCode != 0):
                 raise Exception("error in fetch date!")
 
+
 test = pd.DataFrame(np.array([[8,9], [9,12]]))
 test2 = pd.DataFrame(np.array([[8,9], [9,12]]))
 test.append(test2)

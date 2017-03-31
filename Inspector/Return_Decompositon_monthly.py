@@ -24,7 +24,7 @@ def Portfolio_Return(codelist, weightlist, startdate, enddate):
             pct_chg = (temp_data.Data[i][-1] - temp_data.Data[i][0])/temp_data.Data[i][0]
             pct_chg_list.append(pct_chg)
         nav_data = pd.DataFrame(np.array(temp_data.Data).T, columns=temp_data.Codes, index=temp_data.Times)
-        nav_data = ((nav_data.pct_change()+1).cumprod()*weightlist).apply(sum, axis=1)
+        nav_data = ((nav_data.pct_change()+1).cumprod()*weightlist).apply(sum, axis=1)+(1-sum(weightlist))
 
     if len(pct_chg_list) == len(codelist):
         pct_chg_list = pct_chg_list + [0.0] * (len(weightlist) - len(codelist))
@@ -94,7 +94,7 @@ def Return_Decomposition(indexn, fund, indexweight, fundweight, port_name):
     fund_decom_new = pd.DataFrame(fund_decom_new.values, index=w.wss(fund, "sec_name").Data[0], columns=fund_decom_new.columns)
     fund_decom_new = fund_decom_new.reindex(columns=[u"贡献率", u"涨幅", u"指数涨跌幅"])
     fund_decom_new.to_excel("D:\\FOF\\fund_decom_" + port_name + ".xlsx")
-    nav_data.to_csv("D:\\FOF\\nav_" + port_name + ".xlsx")
+    nav_data.to_csv("D:\\FOF\\nav_" + port_name + ".csv")
 
 
 index_code_list = ["000300.SH", "000905.SH", "SPX.GI", "HSI.HI", "H11001.CSI", "AU9999.SGE", "H11025.CSI"]
@@ -108,7 +108,7 @@ index_fund_map = {"000300.SH" : ["163415.OF", "090013.OF", "000308.OF", "519736.
 "H11025.CSI" : ["003022.OF", "000434.OF"]}
 
 
-
+'''
 #二月组合权重
 code_list_wenjian = ["180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "159926.OF", "003358.OF", "001512.OF", "511010.OF", "161821.OF", "000022.OF",
@@ -116,22 +116,22 @@ code_list_wenjian = ["180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660
 
 weight_list_wenjian = [4.47, 3.78, 3.78, 4.33, 4.33, 5.00, 5.00, 5.00, 6.25, 5.00, 5.00,
 3.72, 3.72, 10.00, 10.00]
-weight_list_wenjian = [4.47, 3.78, 3.78, 4.33, 4.33, 7.60, 7.60, 7.60, 8.88, 7.60, 7.60,
-3.72, 3.72, 10.00, 10.00]
+#weight_list_wenjian = [4.47, 3.78, 3.78, 4.33, 4.33, 7.60, 7.60, 7.60, 8.88, 7.60, 7.60,
+#3.72, 3.72, 10.00, 10.00]
 
 code_list_pingheng = ["180031.OF", "040035.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "159926.OF", "511010.OF",
 "518880.OF", "159934.OF", "003022.OF", "000434.OF"]
 
 weight_list_pingheng = [3.78, 3.78, 4.79, 4.79, 7.27, 7.27, 1.00, 5.75, 5.75, 5.75, 5.90, 5.90, 8.00, 8.00]
-weight_list_pingheng = [3.78, 3.78, 4.79, 4.79, 7.27, 7.27, 5.57, 10.32, 10.32, 10.32, 5.90, 5.90, 8.00, 8.00]
+#weight_list_pingheng = [3.78, 3.78, 4.79, 4.79, 7.27, 7.27, 5.57, 10.32, 10.32, 10.32, 5.90, 5.90, 8.00, 8.00]
 
 code_list_jinqu = ["180031.OF", "040035.OF", "000471.OF", "513500.OF", "096001.OF", "513100.OF", "159920.OF", "513660.OF",
 "511220.OF", "003358.OF", "511010.OF",
 "518880.OF", "159934.OF", "159937.OF", "518800.OF", "003022.OF", "000434.OF"]
 
 weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 1.00, 5.51, 5.51, 4.20, 4.20, 4.20, 4.20, 6.50, 6.50]
-weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 5.01, 9.52, 9.52, 4.20, 4.20, 4.20, 4.20, 6.50, 6.50]
+#weight_list_jinqu = [3.70, 3.70, 3.70, 3.95, 3.95, 3.95, 10.64, 10.64, 5.01, 9.52, 9.52, 4.20, 4.20, 4.20, 4.20, 6.50, 6.50]
 
 
 index_weight_wenjian = [0.00, 4.47, 7.56, 8.66, 31.25, 7.43, 25.00]
@@ -171,10 +171,10 @@ index_weight_jinqu = [0.41, 5.12, 13.36, 14.56, 12.01, 16.80, 25.73]
 index_weight_wenjian = [0.54, 2.50, 9.05, 7.50, 46.88, 7.43, 26.11]
 index_weight_pingheng = [0.47, 3.93, 11.37, 11.35, 36.50, 11.81, 24.57]
 index_weight_jinqu = [0.41, 5.12, 13.36, 14.56, 24.02, 16.80, 25.73]
-'''
 
-start_date = "2017-02-01"
-end_date = "2017-02-28"
+
+start_date = "2017-03-01"
+end_date = "2017-03-30"
 
 Return_Decomposition(index_code_list, code_list_wenjian, index_weight_wenjian, weight_list_wenjian, "wenjian")
 Return_Decomposition(index_code_list, code_list_pingheng, index_weight_pingheng, weight_list_pingheng, "pingheng")
