@@ -161,18 +161,25 @@ print max(ratio_list)
 print min(ratio_list)
 print np.mean(ratio_list)
 '''
+<<<<<<< HEAD
 '''
+=======
+>>>>>>> origin/master
 MS_list = []
 BM_list = []
 for each in range(100):
     test_list_1 = Ms_Simulation(350)
     test_list_2 = Ms_Simulation(350)
+<<<<<<< HEAD
     test_list_3 = Ms_Simulation(350, 1, 1, 0.05, 0.05, 0.03, 0.03)
+=======
+>>>>>>> origin/master
     ms_list = []
     bm_list = []
     for i in range(100):
         tl_cut_1 = test_list_1[:250+i]
         tl_cut_2 = test_list_2[:250+i]
+<<<<<<< HEAD
         tl_cut_3 = test_list_3[:250+i]
         test_frame = pd.DataFrame(np.array([tl_cut_1,tl_cut_2,tl_cut_3]).T, columns=['A','B','C'])
 
@@ -182,6 +189,16 @@ for each in range(100):
 
         ms_return = wgt['A']*test_list_1[250+i] + wgt['B']*test_list_2[250+i] + wgt['C']*test_list_3[250+i]
         bm_return = (test_list_1[250+i] + test_list_2[250+i] + test_list_2[250+i])/3
+=======
+        test_frame = pd.DataFrame(np.array([tl_cut_1,tl_cut_2]).T, columns=['A','B'])
+
+        wgt = Ms_RP(test_frame, {'A':True, 'B':True})
+        '''
+        wgt = pd.Series([0.6, 0.4], index=['A','B'])
+        '''
+        ms_return = wgt['A']*test_list_1[250+i] + wgt['B']*test_list_2[250+i]
+        bm_return = (test_list_1[250+i] + test_list_2[250+i])/2
+>>>>>>> origin/master
         #print ms_return
         #print bm_return
         ms_list.append(ms_return)
@@ -196,6 +213,7 @@ for each in range(100):
 
 print np.mean(MS_list)
 print np.mean(BM_list)
+<<<<<<< HEAD
 '''
 
 data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/stock_bond_gold_CN.xlsx")
@@ -228,6 +246,8 @@ print np.std(pd.Series(ms_list))
 print (pd.Series(bm_list)+1).prod()
 print np.std(pd.Series(bm_list))
 
+=======
+>>>>>>> origin/master
 '''
 $std
 $model

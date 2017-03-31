@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib
 from pylab import *
 import datetime as dt
 from WindPy import *
@@ -79,6 +78,13 @@ def Wsi_Data_Install(code, startdate, enddate, interval):
     else:
         return "no wsi data"
 
+
+def Plot(data):
+    plot_data = data/100 + 1
+    plot_data = plot_data.cumprod()
+    data.plot()
+    plt.savefig("file_path"+"test.png")
+
 def Bondindex_Performance(code, startdate, enddate):
     startdate = str(w.tdaysoffset(-1, startdate).Data[0][0])[:10]
     wsd_data = Wsd_Data_Install(code, ["pct_chg", "amt"], startdate, enddate)
@@ -111,6 +117,7 @@ def Xls_Writer_pctchg(ws, data, all_data, rowno, colno, field):
     if field in [u"涨跌幅", u"净值涨跌幅", u"利率值"]:
         if data[u"今日值"] < data[u"下10%分位数"]:
             ws.write(rowno, colno, "%0.3f%%"%data[u"今日值"], style_down2)
+            Plot(all_data["pct_chg"])
         elif data[u"今日值"] > data[u"上10%分位数"]:
             ws.write(rowno, colno, "%0.3f%%"%data[u"今日值"], style_up2)
         else:
@@ -196,6 +203,7 @@ pnv_jinqu = 1.016862842
 nv_wenjian = Portfolio_Net_Value(code_list_wenjian, weight_list_wenjian, pnv_wenjian, today_date)
 nv_pingheng = Portfolio_Net_Value(code_list_pingheng, weight_list_pingheng, pnv_pingheng, today_date)
 nv_jinqu = Portfolio_Net_Value(code_list_jinqu, weight_list_jinqu, pnv_jinqu, today_date)
+file_path = "D:\\"
 
 '''
 格式定义
