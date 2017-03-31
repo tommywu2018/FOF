@@ -39,3 +39,30 @@ return_series = data["bond"]
 return_series.quantile(0.10)
 return_series = data["gold"]
 return_series.quantile(0.10)
+
+data = pd.read_excel(u"D:\\nv_series_sm.xls")
+
+return_series = data[u"稳健组合"].pct_change().dropna()
+Performance(return_series, 0.04)
+
+return_series = data[u"平衡组合"].pct_change().dropna()
+Performance(return_series, 0.04)
+
+return_series = data[u"进取组合"].pct_change().dropna()
+Performance(return_series, 0.04)
+
+def Performance(return_series, rf_ret):
+    end_value = (return_series + 1).prod()
+    annual_return = (return_series + 1).prod() ** (1/(len(return_series)/240.0)) - 1
+    annual_variance = (return_series.var() * 240.0) ** 0.5
+    sharpe_ratio = (annual_return - rf_ret)/annual_variance
+    max_drawdown = max(((return_series + 1).cumprod().cummax()-(return_series + 1).cumprod())/(return_series + 1).cumprod().cummax())
+    (return_series + 1).cumprod().plot()
+    return [end_value, annual_return, annual_variance, sharpe_ratio, max_drawdown]
+
+from WindPy import *
+w.start()
+index_code_list = ["000300.SH", "000905.SH", "SPX.GI", "HSI.HI", "H11001.CSI", "AU9999.SGE", "H11025.CSI"]
+temp_data = w.wsd(index_code_list, "close", "2017-02-01", "2017-03-30")
+data = pd.DataFrame(np.array(temp_data.Data).T, index=temp_data.Times, columns=temp_data.Codes)
+data.to_excel("D:\\FOF\\index.xlsx")
