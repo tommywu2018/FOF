@@ -4,14 +4,14 @@
 @Time: 2017/1/19 09:30
 """
 
-portfolio_name = u"wenjian"
+portfolio_name = u"jinqu"
 
 from Allocation_Method import Risk_Parity_Weight, Combined_Return_Distribution, Max_Utility_Weight
 import pandas as pd
 import numpy as np
 
 History_Data = pd.read_excel(u"/Users/WangBin-Mac/FOF/Asset Allocation/History_data.xlsx")
-Predict_Data = pd.read_excel(u"//Users/WangBin-Mac/FOF/Asset Allocation/Predict_Data.xlsx")
+Predict_Data = pd.read_excel(u"//Users/WangBin-Mac/FOF/Asset Allocation/HP_Data.xlsx")
 asset_list = ["bond", "stock_large", "stock_small",
               "stock_HongKong", "stock_US", "gold"]
 bnds = [(0.0, None), (0.0, None), (0.0, None),

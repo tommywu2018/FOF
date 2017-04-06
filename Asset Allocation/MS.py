@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import pyper as pr
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from Allocation_Method import Risk_Parity_Weight
 
@@ -162,36 +162,36 @@ print min(ratio_list)
 print np.mean(ratio_list)
 '''
 
-'''
 
 MS_list = []
 BM_list = []
 for each in range(100):
-    test_list_1 = Ms_Simulation(350)
-    test_list_2 = Ms_Simulation(350)
-    test_list_3 = Ms_Simulation(350, 1, 1, 0.05, 0.05, 0.03, 0.03)
+    test_list_1 = Ms_Simulation(480, 0.94798285, 0.94177644, 0.011348197, 0.0025831495, 0.02178261, 0.05045428)
+    test_list_2 = Ms_Simulation(480, 0.90419533, 0.97432935, 0.021510161, 0.0016860435, 0.09058209, 0.03235686)
+    test_list_3 = Ms_Simulation(480, 1, 1, 0.00616607, 0.00616607, 0.014926817, 0.014926817)
     ms_list = []
     bm_list = []
-    for i in range(100):
-        tl_cut_1 = test_list_1[:250+i]
-        tl_cut_2 = test_list_2[:250+i]
-        tl_cut_3 = test_list_3[:250+i]
+    for i in range(360):
+        tl_cut_1 = test_list_1[:120+i]
+        tl_cut_2 = test_list_2[:120+i]
+        tl_cut_3 = test_list_3[:120+i]
         test_frame = pd.DataFrame(np.array([tl_cut_1,tl_cut_2,tl_cut_3]).T, columns=['A','B','C'])
 
         wgt = Ms_RP(test_frame, {'A':True, 'B':True, 'C':False})
 
-        wgt = pd.Series([0.6, 0.4], index=['A','B'])
+        wgt_rp = Risk_Parity_Weight(test_frame.cov())
 
-        ms_return = wgt['A']*test_list_1[250+i] + wgt['B']*test_list_2[250+i] + wgt['C']*test_list_3[250+i]
-        bm_return = (test_list_1[250+i] + test_list_2[250+i] + test_list_2[250+i])/3
-        test_frame = pd.DataFrame(np.array([tl_cut_1,tl_cut_2]).T, columns=['A','B'])
+        ms_return = wgt['A']*test_list_1[120+i] + wgt['B']*test_list_2[120+i] + wgt['C']*test_list_3[120+i]
+        bm_return = wgt_rp['A']*test_list_1[120+i] + wgt_rp['B']*test_list_2[120+i] + wgt_rp['C']*test_list_3[120+i]
 
-        wgt = Ms_RP(test_frame, {'A':True, 'B':True})
+        #test_frame = pd.DataFrame(np.array([tl_cut_1,tl_cut_2]).T, columns=['A','B'])
+
+        #wgt = Ms_RP(test_frame, {'A':True, 'B':True})
 
         #wgt = pd.Series([0.6, 0.4], index=['A','B'])
 
-        ms_return = wgt['A']*test_list_1[250+i] + wgt['B']*test_list_2[250+i]
-        bm_return = (test_list_1[250+i] + test_list_2[250+i])/2
+        #ms_return = wgt['A']*test_list_1[250+i] + wgt['B']*test_list_2[250+i]
+        #bm_return = (test_list_1[250+i] + test_list_2[250+i])/2
         #print ms_return
         #print bm_return
         ms_list.append(ms_return)
@@ -206,20 +206,21 @@ for each in range(100):
 
 print np.mean(MS_list)
 print np.mean(BM_list)
-'''
 
-data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/stock_bond_gold_CN.xlsx")
-data_W = (data/100+1).resample("W").prod().dropna()-1
-data_M = (data/100+1).resample("M").prod()-1
+'''
+data = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SBG_US_M.xlsx")
+#data_W = (data/100+1).resample("W").prod().dropna()-1
+#data_M = (data/100+1).resample("M").prod()-1
+data_W = data.pct_change().dropna()
 
 ms_list = []
 bm_list = []
-for each in range(249,len(data_W)-1):
+for each in range(100,len(data_W)-1):
     #each = 95
     #data_M.index[each]
-    data_frame = data_W[data_W.index[each-249]:data_W.index[each]]
+    data_frame = data_W[data_W.index[each-100]:data_W.index[each]]
 
-    wgt = Ms_RP(data_frame, {'000300.SH':True, 'AU9999.SGE':True, 'H11001.CSI':False})
+    wgt = Ms_RP(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False})
     wgt_bm = Risk_Parity_Weight(data_frame.cov())
 
     #wgt = pd.Series([0.2, 0.2, 0.6], index=data_frame.columns)
@@ -237,7 +238,34 @@ print (pd.Series(ms_list)+1).prod()
 print np.std(pd.Series(ms_list))
 print (pd.Series(bm_list)+1).prod()
 print np.std(pd.Series(bm_list))
-
+'''
+'''
+data_W['Barclays_US_bond'].mean()
+return_list = list(data_W['Barclays_US_bond'])
+return_frame = pd.DataFrame(np.array([return_list, [1]*len(return_list)]).T, columns=['return', 'One'])
+r = pr.R(use_pandas=True)
+r.assign("rframe", return_frame)
+r(
+library(MSwM)
+lm_return <- lm(formula=return~0+One, data=rframe)
+lm_mswm <- msmFit(lm_return, k=2, p=0, sw=c(T,T))
+rstd <- lm_mswm@std
+rCoef <- lm_mswm@Coef
+rtransMat <- lm_mswm@transMat
+rprob_smo <- lm_mswm@Fit@smoProb[-1,]
+#print(lm_mswm@Fit@logLikel)
+raic_mswn <- AIC(lm_mswm)
+raic_lm <- AIC(lm_return)
+)
+std = r.get("rstd")
+Coef = np.array(r.get("rCoef")[' One '])
+transMat = r.get("rtransMat").T
+prob_smo = r.get("rprob_smo")
+std
+Coef
+transMat
+prob_smo
+'''
 
 '''
 $std
