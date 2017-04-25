@@ -3,7 +3,7 @@
 @author: Wang Bin
 """
 
-portfolio_name = u"wenjian"
+portfolio_name = u"jinqu"
 
 from Allocation_Method import Risk_Parity_Weight, Min_Variance_Weight, Combined_Return_Distribution, Max_Sharpe_Weight, Max_Utility_Weight, Inverse_Minimize
 import pandas as pd
@@ -16,6 +16,8 @@ asset_list = ["bond", "stock_large", "stock_small",
               "stock_HongKong", "stock_US", "gold"]
 bnds = [(0.0, None), (0.0, None), (0.0, None),
         (0.0, None), (0.0, None), (0.0, None)]
+asset_level_1 = pd.Series([-0.01, -0.08, -0.08, -0.08, -0.08, -0.08], index=asset_list)
+asset_level_2 = pd.Series([-0.02, -0.16, -0.16, -0.16, -0.16, -0.16], index=asset_list)
 #bnds = [(0.1, 0.6), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.0, 0.3)]
 
 year_delta = 5
@@ -35,6 +37,8 @@ else:
 pct_list = []
 weight_list = []
 date_list = []
+asset_drawdown = pd.Series([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], index=asset_list)
+asset_position = pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0], index=asset_list)
 for each_date in Predict_Data.index[60:-1]:
     last_date = History_Data.index[list(Predict_Data.index).index(each_date)-1]  # 当前月份日期
     next_date = each_date  # 下一月份日期
@@ -51,6 +55,13 @@ for each_date in Predict_Data.index[60:-1]:
     predict_data = Predict_Data[asset_list][
         str(start_year) + '-' + str(start_month): last_date]
     cov_mat = history_data[asset_list].cov() * 12.0
+    for each_asset in asset_list:
+        temp_drawdown = (asset_drawdown[each_asset]+1.0)*(history_data[each_asset][-1]+1.0)-1
+        if temp_drawdown >= 0:
+            temp_drawdown = 0
+        else:
+            pass
+        asset_drawdown[each_asset] = temp_drawdown
     # print cov_mat
     omega = np.matrix(cov_mat.values)
     mkt_wgt = Risk_Parity_Weight(cov_mat)
@@ -74,13 +85,38 @@ for each_date in Predict_Data.index[60:-1]:
 
     weight_bl = Max_Utility_Weight(com_ret, com_cov_mat, lam, bnds)
 
+    for each_asset in asset_list:
+        if asset_position[each_asset] == 1:
+            if (asset_drawdown[each_asset] <= asset_level_1[each_asset]) and (asset_drawdown[each_asset] > asset_level_2[each_asset]):
+                asset_position[each_asset] = 0.5
+            elif asset_drawdown[each_asset] <= asset_level_2[each_asset]:
+                asset_position[each_asset] = 0.0
+            else:
+                pass
+        elif asset_position[each_asset] == 0.5:
+            if asset_position[each_asset] <= asset_level_2[each_asset]:
+                asset_position[each_asset] = 0.0
+            elif (predict_data[each_asset][-1] > 0) and (history_data[each_asset][-1] > 0):
+                asset_position[each_asset] = 1.0
+                asset_drawdown[each_asset] = 0.0
+            else:
+                pass
+        elif asset_position[each_asset] == 0.0:
+            if (predict_data[each_asset][-1] > 0) and (history_data[each_asset][-1] > 0):
+                asset_position[each_asset] = 0.5
+                asset_drawdown[each_asset] = 0.0
+            else:
+                pass
+
+    weight_bl = weight_bl*asset_position
     print sum(weight_bl*History_Data[asset_list].loc[next_date])*money_weight + money_weight*History_Data["money"].loc[next_date]
     pct_list.append(sum(weight_bl*History_Data[asset_list].loc[next_date])*money_weight + money_weight*History_Data["money"].loc[next_date])
     weight_list.append(list(weight_bl))
     date_list.append(next_date)
 
-pd.Series(np.array(pct_list), index=date_list).to_csv("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_wenjian.csv")
-pd.DataFrame(np.array(weight_list), index=date_list, columns=asset_list).to_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_wj_weight.xlsx")
+pd.Series(np.array(pct_list), index=date_list).to_csv("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_%s.csv"%portfolio_name)
+pd.DataFrame(np.array(weight_list), index=date_list, columns=asset_list).to_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_%s_weight.xlsx"%portfolio_name)
+
 
 print (np.array(pct_list)+1).cumprod()[-1]
 
