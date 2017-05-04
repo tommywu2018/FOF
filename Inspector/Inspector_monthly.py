@@ -9,7 +9,6 @@ import datetime as dt
 from WindPy import *
 import xlrd
 from xlwt import Workbook, easyxf
-from xlutils.copy import copy
 w.start()
 
 def Wsd_Data_Install_Monthly(code, fields, enddate, forwardmonths):
@@ -219,7 +218,7 @@ def Xls_Writer_pctchg_Simple(ws, data, all_data, rowno, colno, field):
 
 
 forwardmonths = 37 #数据应包含上月数据及之前36月
-enddate = "2017-02-28"
+enddate = "2017-04-28"
 
 '''
 格式定义
@@ -428,4 +427,4 @@ for each_index in bond_list:
     row_no = row_no + 2
 
 
-ws.save("D:\\test_monthly.xls")
+ws.save(u"Z:\Mac 上的 WangBin-Mac\Inspector_monthly.xls")

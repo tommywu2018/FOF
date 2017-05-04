@@ -9,7 +9,6 @@ import datetime as dt
 from WindPy import *
 import xlrd
 from xlwt import Workbook, easyxf
-from xlutils.copy import copy
 w.start()
 
 
@@ -38,9 +37,10 @@ def Portfolio_Return(codelist, weightlist, startdate, enddate):
     else:
         raise Exception("missing data!")
 
-def Portfolio_Index_Return(codelist, weightlist, startdate, enddate):
+def Portfolio_Index_Return(codelist, weightlist, pre_end_date, startdate, enddate):
     pct_chg_list = list()
     temp_data = w.wsd(codelist, "close", startdate, enddate)
+    temp_data_2 = w.wsd(codelist, "close", pre_end_date, enddate)
     if temp_data.ErrorCode != 0:
         print temp_data.ErrorCode
         raise Exception("error in data install!")
@@ -48,6 +48,7 @@ def Portfolio_Index_Return(codelist, weightlist, startdate, enddate):
         for i in range(len(temp_data.Data)):
             pct_chg = (temp_data.Data[i][-1] - temp_data.Data[i][0])/temp_data.Data[i][0]
             pct_chg_list.append(pct_chg)
+        index_data = pd.DataFrame(np.array(temp_data_2.Data).T, columns=temp_data_2.Codes, index=temp_data_2.Times)
     if len(pct_chg_list) == len(codelist):
         nv_pct_chg = sum(np.array(pct_chg_list) * np.array(weightlist))
         contri_list = list()
@@ -55,12 +56,12 @@ def Portfolio_Index_Return(codelist, weightlist, startdate, enddate):
             contri = (pct_chg_list[j] * weightlist[j])/nv_pct_chg
             contri_list.append(contri)
         contri_series = pd.DataFrame(np.array([pct_chg_list, contri_list]).T, index=codelist, columns=[u"涨幅", u"贡献率"])
-        return nv_pct_chg, contri_series
+        return nv_pct_chg, contri_series, index_data
     else:
         raise Exception("missing data!")
 
 def Return_Decomposition(indexn, fund, indexweight, fundweight, port_name):
-    indexreturn, index_decom = Portfolio_Index_Return(indexn, (np.array(indexweight)/100.0), start_date, end_date)
+    indexreturn, index_decom, index_data = Portfolio_Index_Return(indexn, (np.array(indexweight)/100.0), pre_end_date, start_date, end_date)
     fundreturn, fund_decom, nav_data = Portfolio_Return(fund, (np.array(fundweight)/100.0), start_date, end_date)
     index_fund_return_list = list()
     for each_index in index_decom.index:
@@ -76,7 +77,8 @@ def Return_Decomposition(indexn, fund, indexweight, fundweight, port_name):
     index_fund_decom = pd.DataFrame(np.array(index_fund_return_list), index=indexn, columns=[u"子基金组合收益率", u"子基金组合贡献率"])
     index_decom_new = pd.merge(index_decom, index_fund_decom, left_index=True, right_index=True)
     index_decom_new.index = w.wss(indexn, "sec_name").Data[0]
-    index_decom_new.to_excel("D:\\FOF\\index_decom_" + port_name + ".xlsx")
+    index_decom_new.to_excel(u"Z:\\Mac 上的 WangBin-Mac\\index_decom_" + port_name + ".xlsx")
+    index_data.to_csv(u"Z:\\Mac 上的 WangBin-Mac\\index.csv")
 
     fund_index_return = list()
     for each_fund in fund_decom.index:
@@ -93,8 +95,8 @@ def Return_Decomposition(indexn, fund, indexweight, fundweight, port_name):
     fund_decom_new = pd.merge(fund_decom[[u"涨幅", u"贡献率"]], fund_index_decom, left_index=True, right_index=True)
     fund_decom_new = pd.DataFrame(fund_decom_new.values, index=w.wss(fund, "sec_name").Data[0], columns=fund_decom_new.columns)
     fund_decom_new = fund_decom_new.reindex(columns=[u"贡献率", u"涨幅", u"指数涨跌幅"])
-    fund_decom_new.to_excel("D:\\FOF\\fund_decom_" + port_name + ".xlsx")
-    nav_data.to_csv("D:\\FOF\\nav_" + port_name + ".csv")
+    fund_decom_new.to_excel(u"Z:\\Mac 上的 WangBin-Mac\\fund_decom_" + port_name + ".xlsx")
+    nav_data.to_csv(u"Z:\\Mac 上的 WangBin-Mac\\nav_" + port_name + ".csv")
 
 
 index_code_list = ["000300.SH", "000905.SH", "SPX.GI", "HSI.HI", "H11001.CSI", "AU9999.SGE", "H11025.CSI"]
@@ -141,6 +143,8 @@ index_weight_wenjian = [0.00, 4.47, 7.56, 8.66, 46.88, 7.43, 25.00]
 index_weight_pingheng = [0.00, 7.56, 9.58, 14.55, 36.50, 11.81, 20.00]
 index_weight_jinqu = [0.00, 11.09, 11.83, 21.27, 24.02, 16.80, 15.00]
 '''
+
+'''
 #三月组合权重
 code_list_wenjian = ["163415.OF", "180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
 "159926.OF", "003358.OF", "001512.OF", "511010.OF", "161821.OF", "000022.OF",
@@ -171,10 +175,42 @@ index_weight_jinqu = [0.41, 5.12, 13.36, 14.56, 12.01, 16.80, 25.73]
 index_weight_wenjian = [0.54, 2.50, 9.05, 7.50, 46.88, 7.43, 26.11]
 index_weight_pingheng = [0.47, 3.93, 11.37, 11.35, 36.50, 11.81, 24.57]
 index_weight_jinqu = [0.41, 5.12, 13.36, 14.56, 24.02, 16.80, 25.73]
+'''
+
+#4月组合权重
+code_list_wenjian = ["163415.OF", "180031.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
+"159926.OF", "003358.OF", "001512.OF", "511010.OF", "161821.OF", "000022.OF",
+"518880.OF", "159934.OF", "003022.OF", "000434.OF"]
+
+weight_list_wenjian = [0.00, 3.45, 3.08, 3.08, 4.38, 4.38, 5.25, 5.25, 5.25, 6.25, 5.25, 5.25,
+3.72, 3.72, 10.58, 10.49]
+#weight_list_wenjian = [0.00, 3.45, 3.08, 3.08, 4.38, 4.38, 7.86, 7.86, 7.86, 8.85, 7.85, 7.85, 3.72, 3.72, 10.58, 10.49]
+
+code_list_pingheng = ["163415.OF", "180031.OF", "040035.OF", "513500.OF", "513100.OF", "159920.OF", "513660.OF",
+"511220.OF", "003358.OF", "159926.OF", "511010.OF",
+"518880.OF", "159934.OF", "003022.OF", "000434.OF"]
+
+weight_list_pingheng = [0.00, 2.67, 2.67, 3.51, 3.50, 6.74, 6.73, 2.25, 6.25, 6.25, 6.25, 5.90, 5.90, 9.05, 9.05]
+#weight_list_pingheng = [0.00, 2.67, 2.67, 3.51, 3.50, 6.74, 6.73, 6.82, 10.82, 10.82, 10.82, 5.90, 5.90, 9.05, 9.05]
 
 
-start_date = "2017-03-01"
-end_date = "2017-03-30"
+code_list_jinqu = ["163415.OF", "180031.OF", "040035.OF", "000471.OF", "513500.OF", "096001.OF", "513100.OF", "159920.OF", "513660.OF",
+"511220.OF", "003358.OF", "511010.OF",
+"518880.OF", "159934.OF", "159937.OF", "518800.OF", "003022.OF", "000434.OF"]
+
+weight_list_jinqu = [0.00, 2.50, 2.50, 2.00, 2.60, 2.60, 2.60, 8.81, 8.81, 3.00, 7.50, 7.50, 4.20, 4.20, 4.20, 4.20, 8.00, 7.75]
+#weight_list_jinqu = [0.00, 2.50, 2.50, 2.00, 2.60, 2.60, 2.60, 8.81, 8.81, 7.01, 11.51, 11.51, 4.20, 4.20, 4.20, 4.20, 8.00, 7.75]
+
+index_weight_wenjian = [0.00, 3.45, 6.16, 8.76, 32.50, 7.44, 26.06]
+index_weight_pingheng = [0.00, 5.34, 7.01, 13.47, 21.00, 11.80, 23.10]
+index_weight_jinqu = [0.00, 7.00, 7.80, 17.62, 18.00, 16.80, 20.75]
+#index_weight_wenjian = [0.00, 3.45, 6.16, 8.76, 48.13, 7.44, 26.06]
+#index_weight_pingheng = [0.00, 5.34, 7.01, 13.47, 39.28, 11.80, 23.10]
+#index_weight_jinqu = [0.00, 7.00, 7.80, 17.62, 30.03, 16.80, 20.75]
+
+pre_end_date = "2017-03-01"
+start_date = "2017-04-01"
+end_date = "2017-04-28"
 
 Return_Decomposition(index_code_list, code_list_wenjian, index_weight_wenjian, weight_list_wenjian, "wenjian")
 Return_Decomposition(index_code_list, code_list_pingheng, index_weight_pingheng, weight_list_pingheng, "pingheng")

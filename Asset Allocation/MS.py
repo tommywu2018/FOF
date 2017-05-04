@@ -5,7 +5,7 @@ import numpy as np
 import pyper as pr
 #import matplotlib.pyplot as plt
 
-from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight
+from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight_new
 
 #Simulation
 def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std_q=0.15):
@@ -186,7 +186,7 @@ def Ms_MU(return_frame, switch_map):
         exp_ret = pd.DataFrame(exp_ret_list, index=temp_columns)
         cov_mat = np.array(cov_mat_list).reshape(len(temp_columns), len(temp_columns))
         cov_mat = pd.DataFrame(cov_mat, columns=temp_columns, index=temp_columns)
-        rp_wgt = Max_Utility_Weight(exp_ret, cov_mat, 3, [(0.0,None)]*len(temp_columns))
+        rp_wgt = Max_Utility_Weight_new(exp_ret, cov_mat, 2, [(0.0,None)]*len(temp_columns))
         rp_wgt_list.append(rp_wgt)
 
     prob_list =[]
@@ -329,19 +329,21 @@ for each in range(120,len(data)-1):
     #data_M.index[each]
     r = pr.R(use_pandas=True)
     r("library(MSwM)")
-    data_frame = data[:data.index[each]]
+    #data_frame = data[:data.index[each]]
+    data_frame = data[data.index[each-120]:data.index[each]]
 
     wgt = Ms_MU(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False})
     #wgt = Ms_RP(data_frame, {'SP500':True, 'London_gold':False, 'Barclays_US_bond':False})
-    wgt_bm = Max_Utility_Weight(pd.DataFrame(data_frame.mean()), data_frame.cov(), 3, [(0.0,None)]*3)
+    #data_frame = data[data.index[each-120]:data.index[each]]
+    wgt_bm = Max_Utility_Weight_new(pd.DataFrame(data_frame.mean()), data_frame.cov(), 2, [(0.0,None)]*3)
 
     #wgt = pd.Series([0.2, 0.2, 0.6], index=data_frame.columns)
     print wgt
-    print data.loc[data.index[each+1]]
-    ms_return = np.sum(wgt*data.loc[data.index[each+1]])/100
-    bm_return = np.sum(wgt_bm*data.loc[data.index[each+1]])/100
+    #print data.loc[data.index[each+1]]
+    ms_return = np.sum(wgt*data.loc[data.index[each+1]])
+    bm_return = np.sum(wgt_bm*data.loc[data.index[each+1]])
     print data.index[each+1]
-    #print ms_return
+    print ms_return
     #print bm_return
     ms_list.append(ms_return)
     bm_list.append(bm_return)

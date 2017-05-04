@@ -171,6 +171,39 @@ def Max_Utility_Weight(exp_ret, cov_mat, lam, bnds):
 
     return weight / weight.sum()
 
+
+def Max_Utility_Weight_new(exp_ret, cov_mat, lam, bnds):
+    '''
+    计算夏普比率最大的投资组合的权重
+    :param exp_ret: 预期收益率-DataFrame
+    :param cov_mat: 预期方差协方差矩阵-DataFrame
+    :return: 配置权重-Series
+    '''
+
+    import numpy as np
+    import pandas as pd
+    from scipy.optimize import minimize
+
+    omega = np.matrix(cov_mat.values)
+    ret = np.matrix(exp_ret)
+    #print omega
+    #print exp_ret
+
+    def fun(x):
+        return -(np.matrix(x) * ret - 0.5 * lam * (np.matrix(x) * omega * np.matrix(x).T))
+
+    x0 = np.ones(omega.shape[0]) / omega.shape[0]
+    bnds = tuple(bnds)
+    cons = ({'type': 'eq', 'fun': lambda x: sum(x) - 1})
+    options = {'disp': False, 'maxiter': 500, 'ftol': 1e-10}
+
+    res = minimize(fun, x0, bounds=bnds, constraints=cons, method='SLSQP', options=options)
+
+    weight = pd.Series(index=cov_mat.index, data=res['x'])
+
+    return weight / weight.sum()
+
+
 def Inverse_Minimize(wgt, cov_mat, lam):
     '''
 
