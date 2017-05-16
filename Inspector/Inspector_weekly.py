@@ -218,7 +218,7 @@ def Xls_Writer_pctchg_Simple(ws, data, all_data, rowno, colno, field):
 
 
 forwardweeks = 54 #数据应包含上周数据及之前52周
-enddate = "2017-04-28"
+enddate = "2017-05-12"
 
 '''
 格式定义
