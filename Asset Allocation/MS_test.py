@@ -38,3 +38,34 @@ a
 test[0]
 np.where(test, round(test, 4), 0)
 '''
+
+
+def Performance(return_series, rf_ret):
+    end_value = (return_series + 1).prod()
+    annual_return = (return_series + 1).prod() ** (1/(len(return_series)/12.0)) - 1
+    annual_variance = (return_series.var() * 12.0) ** 0.5
+    sharpe_ratio = (annual_return - rf_ret)/annual_variance
+    max_drawdown = max(((return_series + 1).cumprod().cummax()-(return_series + 1).cumprod())/(return_series + 1).cumprod().cummax())
+    return [end_value, annual_return, annual_variance, sharpe_ratio, max_drawdown]
+
+def Comparance(file_path):
+    data = pd.read_csv(file_path)
+    ms_per = Performance(data["ms_return"], 0.04)
+    bm_per = Performance(data["bm_return"], 0.04)
+    ms_turnover = data[["SP500", "London_gold", "Barclays_US_bond"]].diff().dropna().abs().sum(axis=1).mean()*12
+    bm_turnover = data[["s_bm", "g_bm", "b_bm"]].diff().dropna().abs().sum(axis=1).mean()*12
+    ms_per.append(ms_turnover)
+    bm_per.append(bm_turnover)
+    return pd.DataFrame(np.array([ms_per, bm_per]).T, columns=[file_path[-8:-4] + "_ms", file_path[-8:-4] + "_bm"], index=['end_value', 'annual_return', 'annual_variance', 'sharpe_ratio', 'max_drawdown', 'turnover'])
+
+def Comparance(file_path):
+    data = pd.read_csv(file_path)
+    ms_per = Performance(data["ms_return"], 0.04)
+    bm_per = Performance(data["bm_return"], 0.04)
+    ms_turnover = data[["SP500", "Barclays_US_bond"]].diff().dropna().abs().sum(axis=1).mean()*12
+    bm_turnover = data[["s_bm", "b_bm"]].diff().dropna().abs().sum(axis=1).mean()*12
+    ms_per.append(ms_turnover)
+    bm_per.append(bm_turnover)
+    return pd.DataFrame(np.array([ms_per, bm_per]).T, columns=[file_path[-8:-4] + "_ms", file_path[-8:-4] + "_bm"], index=['end_value', 'annual_return', 'annual_variance', 'sharpe_ratio', 'max_drawdown', 'turnover'])
+
+Comparance("F:\GitHub\FOF\MU_e.csv").to_clipboard()
