@@ -1,5 +1,4 @@
-# coding=utf-8
-
+#
 import pandas as pd
 import numpy as np
 import pyper as pr
@@ -399,7 +398,11 @@ print np.std(pd.Series(bm_list))
 '''
 
 #美国实际数据
+<<<<<<< HEAD
 data = pd.read_excel("F:\GitHub\FOF\Global Allocation\SBG_US_M.xlsx")
+=======
+data = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SBG_US_M.xlsx")
+>>>>>>> origin/master
 data = data.interpolate()
 data = data.dropna().pct_change().dropna()
 
