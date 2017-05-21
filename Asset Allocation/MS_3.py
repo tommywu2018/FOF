@@ -4,7 +4,7 @@ import numpy as np
 import pyper as pr
 #import matplotlib.pyplot as plt
 
-from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight_new, Max_Utility_Weight
+from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight_new, Max_Utility_Weight, Max_Utility_Weight_MS
 
 #Simulation
 def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std_q=0.15):
@@ -125,22 +125,24 @@ def Ms_RP(return_frame, switch_map):
     #print temp_cov_list
 
     Tree = Tree_Gen(switch_map, temp_columns)
+    cov_mat_list = []
     rp_wgt_list = []
     for each_leaf in Tree:
-        cov_mat_list = []
+        cov_mat_temp = []
         for i in range(len(temp_columns)):
             for j in range(len(temp_columns)):
                 if i == j:
-                    cov_mat_list.append((Ms_frame[temp_columns[i]]['std'][int(each_leaf[i])])**2)
+                    cov_mat_temp.append((Ms_frame[temp_columns[i]]['std'][int(each_leaf[i])])**2)
                 else:
                     if i < j :
                         location = len(temp_columns)*(i+1)-sum(range(i+2))-(len(temp_columns)-j)
-                        cov_mat_list.append(temp_cov_list[location][int(each_leaf[i]),int(each_leaf[j])])
+                        cov_mat_temp.append(temp_cov_list[location][int(each_leaf[i]),int(each_leaf[j])])
                     else:
                         location = len(temp_columns)*(j+1)-sum(range(j+2))-(len(temp_columns)-i)
-                        cov_mat_list.append(temp_cov_list[location][int(each_leaf[j]),int(each_leaf[i])])
-        cov_mat = np.array(cov_mat_list).reshape(len(temp_columns), len(temp_columns))
+                        cov_mat_temp.append(temp_cov_list[location][int(each_leaf[j]),int(each_leaf[i])])
+        cov_mat = np.array(cov_mat_temp).reshape(len(temp_columns), len(temp_columns))
         cov_mat = pd.DataFrame(cov_mat, columns=temp_columns, index=temp_columns)
+        cov_mat_list.append(cov_mat)
         rp_wgt = Risk_Parity_Weight(cov_mat)
         rp_wgt_list.append(rp_wgt)
 
@@ -195,27 +197,31 @@ def Ms_MU(return_frame, switch_map, lam):
     #print temp_cov_list
 
     Tree = Tree_Gen(switch_map, temp_columns)
-    rp_wgt_list = []
+    exp_ret_list = []
+    cov_mat_list = []
+    mu_wgt_list = []
     for each_leaf in Tree:
-        cov_mat_list = []
-        exp_ret_list = []
+        cov_mat_temp = []
+        exp_ret_temp = []
         for i in range(len(temp_columns)):
             for j in range(len(temp_columns)):
                 if i == j:
-                    cov_mat_list.append((Ms_frame[temp_columns[i]]['std'][int(each_leaf[i])])**2)
-                    exp_ret_list.append(Ms_frame[temp_columns[i]]['Coef'][int(each_leaf[i])])
+                    cov_mat_temp.append((Ms_frame[temp_columns[i]]['std'][int(each_leaf[i])])**2)
+                    exp_ret_temp.append(Ms_frame[temp_columns[i]]['Coef'][int(each_leaf[i])])
                 else:
                     if i < j :
                         location = len(temp_columns)*(i+1)-sum(range(i+2))-(len(temp_columns)-j)
-                        cov_mat_list.append(temp_cov_list[location][int(each_leaf[i]),int(each_leaf[j])])
+                        cov_mat_temp.append(temp_cov_list[location][int(each_leaf[i]),int(each_leaf[j])])
                     else:
                         location = len(temp_columns)*(j+1)-sum(range(j+2))-(len(temp_columns)-i)
-                        cov_mat_list.append(temp_cov_list[location][int(each_leaf[j]),int(each_leaf[i])])
-        exp_ret = pd.DataFrame(exp_ret_list, index=temp_columns)
-        cov_mat = np.array(cov_mat_list).reshape(len(temp_columns), len(temp_columns))
+                        cov_mat_temp.append(temp_cov_list[location][int(each_leaf[j]),int(each_leaf[i])])
+        exp_ret = pd.DataFrame(exp_ret_temp, index=temp_columns)
+        exp_ret_list.append(exp_ret)
+        cov_mat = np.array(cov_mat_temp).reshape(len(temp_columns), len(temp_columns))
         cov_mat = pd.DataFrame(cov_mat, columns=temp_columns, index=temp_columns)
-        rp_wgt = Max_Utility_Weight_new(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
-        rp_wgt_list.append(rp_wgt)
+        cov_mat_list.append(cov_mat)
+        mu_wgt = Max_Utility_Weight_new(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
+        mu_wgt_list.append(mu_wgt)
 
     prob_list =[]
     for each_leaf in Tree:
@@ -239,9 +245,11 @@ def Ms_MU(return_frame, switch_map, lam):
     '''
     prob_wgt_list = []
     for i in range(len(Tree)):
-        prob_wgt_list.append(rp_wgt_list[i]*prob_list[i])
+        prob_wgt_list.append(mu_wgt_list[i]*prob_list[i])
 
-    return sum(prob_wgt_list)
+    mu_wgt_ms = Max_Utility_Weight_MS(exp_ret_list, cov_mat_list, prob_list, lam, [(0.0,None)]*len(temp_columns))
+
+    return sum(prob_wgt_list), mu_wgt_ms
 
 
 
@@ -273,22 +281,22 @@ def Ms_Multi(return_frame, switch_map, lam):
     rp_wgt_list = []
     mu_wgt_list = []
     for each_leaf in Tree:
-        cov_mat_list = []
-        exp_ret_list = []
+        cov_mat_temp = []
+        exp_ret_temp = []
         for i in range(len(temp_columns)):
             for j in range(len(temp_columns)):
                 if i == j:
-                    cov_mat_list.append((Ms_frame[temp_columns[i]]['std'][int(each_leaf[i])])**2)
-                    exp_ret_list.append(Ms_frame[temp_columns[i]]['Coef'][int(each_leaf[i])])
+                    cov_mat_temp.append((Ms_frame[temp_columns[i]]['std'][int(each_leaf[i])])**2)
+                    exp_ret_temp.append(Ms_frame[temp_columns[i]]['Coef'][int(each_leaf[i])])
                 else:
                     if i < j :
                         location = len(temp_columns)*(i+1)-sum(range(i+2))-(len(temp_columns)-j)
-                        cov_mat_list.append(temp_cov_list[location][int(each_leaf[i]),int(each_leaf[j])])
+                        cov_mat_temp.append(temp_cov_list[location][int(each_leaf[i]),int(each_leaf[j])])
                     else:
                         location = len(temp_columns)*(j+1)-sum(range(j+2))-(len(temp_columns)-i)
-                        cov_mat_list.append(temp_cov_list[location][int(each_leaf[j]),int(each_leaf[i])])
-        exp_ret = pd.DataFrame(exp_ret_list, index=temp_columns)
-        cov_mat = np.array(cov_mat_list).reshape(len(temp_columns), len(temp_columns))
+                        cov_mat_temp.append(temp_cov_list[location][int(each_leaf[j]),int(each_leaf[i])])
+        exp_ret = pd.DataFrame(exp_ret_temp, index=temp_columns)
+        cov_mat = np.array(cov_mat_temp).reshape(len(temp_columns), len(temp_columns))
         cov_mat = pd.DataFrame(cov_mat, columns=temp_columns, index=temp_columns)
         rp_wgt = Risk_Parity_Weight(cov_mat)
         mu_wgt = Max_Utility_Weight(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
@@ -406,8 +414,8 @@ print np.mean(MS_list)
 print np.mean(BM_list)
 '''
 #中国实际数据
-
-data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
+data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/stock_bond_gold_CN.xlsx")
+#data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
 #data_W = (data/100+1).resample("W").prod().dropna()-1
 data_D = data/100
 data_W = (data/100+1).resample("W").prod().dropna()-1
@@ -441,12 +449,14 @@ for each in range(59,len(data_M)-1):
     data_frame = data_M[data_M.index[each-59]:data_M.index[each]]
 
     #data_frame = data_frame[['SP500', 'Barclays_US_bond']]
-    '''
-    mu_wgt = Ms_MU(data_frame, {'SP500':True, 'Barclays_US_bond':False}, 2)
-    print each
-    print mu_wgt
+    print "data OK!"
+    mu_wgt = Ms_MU(data_frame, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1}, 2)
+    mu_wgt_bm = Max_Utility_Weight(pd.DataFrame(data_frame.mean()), data_frame.cov(), 2, [(0.0,None)]*3).round(3)
 
-    rp_wgt = Ms_RP(data, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1})
+    print mu_wgt
+    print mu_wgt_bm
+
+    #rp_wgt = Ms_RP(data, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1})
     '''
     multi_wgt = Ms_Multi(data_frame, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1}, 2)
     #multi_wgt = Ms_Multi(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False}, 2)
@@ -454,12 +464,13 @@ for each in range(59,len(data_M)-1):
     rp_wgt = multi_wgt["rp_wgt"]
     print mu_wgt
     #print rp_wgt
-
+    '''
+    '''
     #data_frame = data[data.index[each-120]:data.index[each]]
     rp_wgt_bm = Risk_Parity_Weight(data_frame.cov()).round(3)
     mu_wgt_bm = Max_Utility_Weight(pd.DataFrame(data_frame.mean()), data_frame.cov(), 2, [(0.0,None)]*3).round(3)
     print mu_wgt_bm
-    '''
+
     mu_wgt = Ms_MU(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False})
     rp_wgt = Ms_RP(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False})
     #data_frame = data[data.index[each-120]:data.index[each]]
@@ -469,21 +480,22 @@ for each in range(59,len(data_M)-1):
 
     mu_ms_return = np.sum(mu_wgt*data_M.loc[data_M.index[each+1]])
     mu_bm_return = np.sum(mu_wgt_bm*data_M.loc[data_M.index[each+1]])
-    rp_ms_return = np.sum(rp_wgt*data_M.loc[data_M.index[each+1]])
-    rp_bm_return = np.sum(rp_wgt_bm*data_M.loc[data_M.index[each+1]])
+    #rp_ms_return = np.sum(rp_wgt*data_M.loc[data_M.index[each+1]])
+    #rp_bm_return = np.sum(rp_wgt_bm*data_M.loc[data_M.index[each+1]])
 
     #print bm_return
     mu_result = list(mu_wgt)+list(mu_wgt_bm)+[mu_ms_return]+[mu_bm_return]
-    rp_result = list(rp_wgt)+list(rp_wgt_bm)+[rp_ms_return]+[rp_bm_return]
+    #rp_result = list(rp_wgt)+list(rp_wgt_bm)+[rp_ms_return]+[rp_bm_return]
 
     mu_result_list.append(mu_result)
-    rp_result_list.append(rp_result)
+    #rp_result_list.append(rp_result)
     index_list.append(data_M.index[each+1])
     print data_M.index[each+1]
-
+    '''
+'''
 pd.DataFrame(np.array(mu_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_CN.csv")
-pd.DataFrame(np.array(rp_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("RP_CN.csv")
-
+#pd.DataFrame(np.array(rp_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("RP_CN.csv")
+'''
 '''
 pd.DataFrame(np.array(mu_result_list), columns=list(data.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_e.csv")
 pd.DataFrame(np.array(rp_result_list), columns=list(data.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("Rp_e.csv")

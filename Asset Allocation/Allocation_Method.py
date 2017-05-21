@@ -36,6 +36,7 @@ def Risk_Parity_Weight(cov_mat):
     return weight / weight.sum()
 
 
+
 def Min_Variance_Weight(cov_mat):
     '''
     计算最小方差组合的配置权重
@@ -168,6 +169,40 @@ def Max_Utility_Weight(exp_ret, cov_mat, lam, bnds):
     res = minimize(fun, x0, bounds=bnds, constraints=cons, method='SLSQP', options=options)
 
     weight = pd.Series(index=cov_mat.index, data=res['x'])
+
+    return weight / weight.sum()
+
+def Max_Utility_Weight_MS(exp_ret_list, cov_mat_list, prob_list, lam, bnds):
+    '''
+    MS框架下计算夏普比率最大的投资组合的权重
+    :param exp_ret: 预期收益率-DataFrame
+    :param cov_mat: 预期方差协方差矩阵-DataFrame
+    :return: 配置权重-Series
+    '''
+
+    import numpy as np
+    import pandas as pd
+    from scipy.optimize import minimize
+
+    #print omega
+    #print exp_ret
+
+    def fun(x):
+        gold = 0
+        for i in range(len(exp_ret_list)):
+            omega = np.matrix(cov_mat_list[i].values)
+            ret = np.matrix(exp_ret_list[i])
+            gold = gold - prob_list[i]*(np.matrix(x) * ret - 0.5 * lam * np.sqrt(np.matrix(x) * omega * np.matrix(x).T))
+        return gold
+
+    x0 = np.ones(len(exp_ret_list[0])) / len(exp_ret_list[0])
+    bnds = tuple(bnds)
+    cons = ({'type': 'eq', 'fun': lambda x: sum(x) - 1})
+    options = {'disp': False, 'maxiter': 500, 'ftol': 1e-10}
+
+    res = minimize(fun, x0, bounds=bnds, constraints=cons, method='SLSQP', options=options)
+
+    weight = pd.Series(index=cov_mat_list[0].index, data=res['x'])
 
     return weight / weight.sum()
 
