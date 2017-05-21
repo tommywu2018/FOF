@@ -4,7 +4,7 @@ import numpy as np
 import pyper as pr
 #import matplotlib.pyplot as plt
 
-from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight_new
+from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight_new, Max_Utility_Weight
 
 #Simulation
 def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std_q=0.15):
@@ -28,17 +28,18 @@ def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std
         temp_list.append(temp_data)
     return temp_list
 
-def Ms_R(return_list):
+def Ms_R(return_list, regime_count):
     #return_list = list(data_M["AU9999.SGE"])
     return_frame = pd.DataFrame(np.array([return_list, [1]*len(return_list)]).T, columns=['return', 'One'])
     r("rm(list = ls())")
     r.assign("rframe", return_frame)
+    r.assign("rregimecount", regime_count)
     Coef = None
     break_i = 0
     while Coef is None:
         r('''
         lm_return <- lm(formula=return~0+One, data=rframe)
-        lm_mswm <- msmFit(lm_return, k=2, p=0, sw=c(T,T))
+        lm_mswm <- msmFit(lm_return, k=rregimecount, p=0, sw=c(T,T))
         rstd <- lm_mswm@std
         rCoef <- lm_mswm@Coef
         rtransMat <- lm_mswm@transMat
@@ -51,39 +52,52 @@ def Ms_R(return_list):
         break_i = break_i + 1
         if break_i > 100:
             break
+
     aic_mswm = r.get("raic_mswm")
     aic_lm = r.get("raic_lm")
+
     if aic_mswm < aic_lm:
         std = np.round(r.get("rstd"),4)
         Coef = np.round(np.array(r.get("rCoef")[' One ']),4)
         transMat = np.round(r.get("rtransMat").T,4)
         prob_smo = np.round(r.get("rprob_smo"),4)
     else:
-        std = np.array([np.std(return_list)]*2)
-        Coef = np.array([np.mean(return_list)]*2)
-        transMat = np.array([[1,0],[0,1]]).reshape(2,2)
-        prob_smo = np.array([[0.5]*len(return_list),[0.5]*len(return_list)]).T
+        std = np.array([np.std(return_list)]*regime_count)
+        Coef = np.array([np.mean(return_list)]*regime_count)
+        transMat = np.diag([1]*regime_count)
+        prob_smo = np.array([[1.0/regime_count]*regime_count]*len(return_list))
 
     return std, Coef, transMat, prob_smo
 
 def Cross_Cov(return_list_1, return_list_2, Coef_1, Coef_2, prob_smo_1, prob_smo_2):
     temp_list = []
-    for i in range(2):
-        for j in range(2):
+    range_i = len(Coef_1)
+    range_j = len(Coef_2)
+    for i in range(range_i):
+        for j in range(range_j):
             temp_cov = np.sum(prob_smo_1[:,i]*prob_smo_2[:,j]*(return_list_1 - Coef_1[i])*(return_list_2 - Coef_2[j]))/np.sum(prob_smo_1[:,i]*prob_smo_2[:,j])
             temp_list.append(temp_cov)
-    cov_mat = np.array(temp_list).reshape(2,2)
+    cov_mat = np.array(temp_list).reshape(range_i,range_j)
     return cov_mat
 
-def Tree_Gen(length):
-    temp_list = []
-    for i in range(2**length):
-        temp_bin = bin(i)
-        temp_bin = temp_bin.replace('0b', '')
-        if len(temp_bin) < length:
-            temp_bin = '0'*(length-len(temp_bin)) + temp_bin
-        temp_list.append(temp_bin)
-    return temp_list
+
+def Tree_Gen(switch_map, temp_columns):
+    dimension_list = []
+    for each in temp_columns:
+        if switch_map[each] != 1:
+            dimension_list.append(switch_map[each])
+        else:
+            dimension_list.append(2)
+    #print dimension_list
+    return_list = ['']
+    for dimension in dimension_list:
+        temp_list = []
+        for i in range(dimension):
+            for j in return_list:
+                temp_list.append(j+str(i))
+        return_list = temp_list
+
+    return return_list
 
 # intTree_Gen(4)[1][0]
 def Ms_RP(return_frame, switch_map):
@@ -91,8 +105,10 @@ def Ms_RP(return_frame, switch_map):
 
     temp_Ms_list = []
     for each in temp_columns:
-        if switch_map[each]:
-            temp_std, temp_Coef, temp_transMat, temp_prob_smo = Ms_R(list(return_frame[each]))
+        if switch_map[each] != 1:
+            temp_std, temp_Coef, temp_transMat, temp_prob_smo = Ms_R(list(return_frame[each]), switch_map[each])
+            #print temp_Coef
+            #print temp_std
         else:
             temp_std = np.array([np.std(list(return_frame[each]))]*2)
             temp_Coef = np.array([np.mean(list(return_frame[each]))]*2)
@@ -106,8 +122,9 @@ def Ms_RP(return_frame, switch_map):
         for each_j in temp_columns[temp_columns.index(each_i)+1:]:
             temp_cov_mat = Cross_Cov(return_frame[each_i], return_frame[each_j], Ms_frame[each_i]['Coef'], Ms_frame[each_j]['Coef'], Ms_frame[each_i]['prob_smo'], Ms_frame[each_j]['prob_smo'])
             temp_cov_list.append(temp_cov_mat)
+    #print temp_cov_list
 
-    Tree = Tree_Gen(len(temp_columns))
+    Tree = Tree_Gen(switch_map, temp_columns)
     rp_wgt_list = []
     for each_leaf in Tree:
         cov_mat_list = []
@@ -133,9 +150,11 @@ def Ms_RP(return_frame, switch_map):
         for i in range(len(temp_columns)):
             stat = int(each_leaf[i])
             trans_mat = Ms_frame[temp_columns[i]]['transMat']
-            temp_prob = Ms_frame[temp_columns[i]]['prob_smo'][-1,0]*trans_mat[0,stat] + Ms_frame[temp_columns[i]]['prob_smo'][-1,1]*trans_mat[1,stat]
+            temp_prob = sum(Ms_frame[temp_columns[i]]['prob_smo'][-1,:]*trans_mat[:,stat])
+            #temp_prob = Ms_frame[temp_columns[i]]['prob_smo'][-1,0]*trans_mat[0,stat] + Ms_frame[temp_columns[i]]['prob_smo'][-1,1]*trans_mat[1,stat]
             prob_leaf = prob_leaf * temp_prob
         prob_list.append(prob_leaf)
+        #print prob_list
     '''
     filt_prob_list = []
     for each_prob in prob_list:
@@ -151,14 +170,15 @@ def Ms_RP(return_frame, switch_map):
 
     return sum(prob_wgt_list)
 
-
 def Ms_MU(return_frame, switch_map, lam):
     temp_columns = list(return_frame.columns)
 
     temp_Ms_list = []
     for each in temp_columns:
-        if switch_map[each]:
-            temp_std, temp_Coef, temp_transMat, temp_prob_smo = Ms_R(list(return_frame[each]))
+        if switch_map[each] != 1:
+            temp_std, temp_Coef, temp_transMat, temp_prob_smo = Ms_R(list(return_frame[each]), switch_map[each])
+            #print temp_Coef
+            #print temp_std
         else:
             temp_std = np.array([np.std(list(return_frame[each]))]*2)
             temp_Coef = np.array([np.mean(list(return_frame[each]))]*2)
@@ -172,8 +192,9 @@ def Ms_MU(return_frame, switch_map, lam):
         for each_j in temp_columns[temp_columns.index(each_i)+1:]:
             temp_cov_mat = Cross_Cov(return_frame[each_i], return_frame[each_j], Ms_frame[each_i]['Coef'], Ms_frame[each_j]['Coef'], Ms_frame[each_i]['prob_smo'], Ms_frame[each_j]['prob_smo'])
             temp_cov_list.append(temp_cov_mat)
+    #print temp_cov_list
 
-    Tree = Tree_Gen(len(temp_columns))
+    Tree = Tree_Gen(switch_map, temp_columns)
     rp_wgt_list = []
     for each_leaf in Tree:
         cov_mat_list = []
@@ -194,9 +215,6 @@ def Ms_MU(return_frame, switch_map, lam):
         cov_mat = np.array(cov_mat_list).reshape(len(temp_columns), len(temp_columns))
         cov_mat = pd.DataFrame(cov_mat, columns=temp_columns, index=temp_columns)
         rp_wgt = Max_Utility_Weight_new(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
-        print exp_ret
-        print cov_mat
-        #print rp_wgt
         rp_wgt_list.append(rp_wgt)
 
     prob_list =[]
@@ -205,9 +223,11 @@ def Ms_MU(return_frame, switch_map, lam):
         for i in range(len(temp_columns)):
             stat = int(each_leaf[i])
             trans_mat = Ms_frame[temp_columns[i]]['transMat']
-            temp_prob = Ms_frame[temp_columns[i]]['prob_smo'][-1,0]*trans_mat[0,stat] + Ms_frame[temp_columns[i]]['prob_smo'][-1,1]*trans_mat[1,stat]
+            temp_prob = sum(Ms_frame[temp_columns[i]]['prob_smo'][-1,:]*trans_mat[:,stat])
+            #temp_prob = Ms_frame[temp_columns[i]]['prob_smo'][-1,0]*trans_mat[0,stat] + Ms_frame[temp_columns[i]]['prob_smo'][-1,1]*trans_mat[1,stat]
             prob_leaf = prob_leaf * temp_prob
         prob_list.append(prob_leaf)
+        #print prob_list
     '''
     filt_prob_list = []
     for each_prob in prob_list:
@@ -217,21 +237,23 @@ def Ms_MU(return_frame, switch_map, lam):
             filt_prob_list.append(0.0)
     prob_list = filt_prob_list
     '''
-    print rp_wgt_list
-    print prob_list
     prob_wgt_list = []
     for i in range(len(Tree)):
         prob_wgt_list.append(rp_wgt_list[i]*prob_list[i])
 
     return sum(prob_wgt_list)
 
+
+
 def Ms_Multi(return_frame, switch_map, lam):
     temp_columns = list(return_frame.columns)
 
     temp_Ms_list = []
     for each in temp_columns:
-        if switch_map[each]:
-            temp_std, temp_Coef, temp_transMat, temp_prob_smo = Ms_R(list(return_frame[each]))
+        if switch_map[each] != 1:
+            temp_std, temp_Coef, temp_transMat, temp_prob_smo = Ms_R(list(return_frame[each]), switch_map[each])
+            #print temp_Coef
+            #print temp_std
         else:
             temp_std = np.array([np.std(list(return_frame[each]))]*2)
             temp_Coef = np.array([np.mean(list(return_frame[each]))]*2)
@@ -245,8 +267,9 @@ def Ms_Multi(return_frame, switch_map, lam):
         for each_j in temp_columns[temp_columns.index(each_i)+1:]:
             temp_cov_mat = Cross_Cov(return_frame[each_i], return_frame[each_j], Ms_frame[each_i]['Coef'], Ms_frame[each_j]['Coef'], Ms_frame[each_i]['prob_smo'], Ms_frame[each_j]['prob_smo'])
             temp_cov_list.append(temp_cov_mat)
+    #print temp_cov_list
 
-    Tree = Tree_Gen(len(temp_columns))
+    Tree = Tree_Gen(switch_map, temp_columns)
     rp_wgt_list = []
     mu_wgt_list = []
     for each_leaf in Tree:
@@ -268,7 +291,7 @@ def Ms_Multi(return_frame, switch_map, lam):
         cov_mat = np.array(cov_mat_list).reshape(len(temp_columns), len(temp_columns))
         cov_mat = pd.DataFrame(cov_mat, columns=temp_columns, index=temp_columns)
         rp_wgt = Risk_Parity_Weight(cov_mat)
-        mu_wgt = Max_Utility_Weight_new(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
+        mu_wgt = Max_Utility_Weight(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
         #print mu_wgt
         #print "----"
         rp_wgt_list.append(rp_wgt)
@@ -280,9 +303,11 @@ def Ms_Multi(return_frame, switch_map, lam):
         for i in range(len(temp_columns)):
             stat = int(each_leaf[i])
             trans_mat = Ms_frame[temp_columns[i]]['transMat']
-            temp_prob = Ms_frame[temp_columns[i]]['prob_smo'][-1,0]*trans_mat[0,stat] + Ms_frame[temp_columns[i]]['prob_smo'][-1,1]*trans_mat[1,stat]
+            temp_prob = sum(Ms_frame[temp_columns[i]]['prob_smo'][-1,:]*trans_mat[:,stat])
+            #temp_prob = Ms_frame[temp_columns[i]]['prob_smo'][-1,0]*trans_mat[0,stat] + Ms_frame[temp_columns[i]]['prob_smo'][-1,1]*trans_mat[1,stat]
             prob_leaf = prob_leaf * temp_prob
         prob_list.append(prob_leaf)
+        #print prob_list
     '''
     filt_prob_list = []
     for each_prob in prob_list:
@@ -294,12 +319,25 @@ def Ms_Multi(return_frame, switch_map, lam):
     '''
     prob_rp_wgt_list = []
     prob_mu_wgt_list = []
+    prob_rp_list = []
+    prob_mu_list = []
 
     for i in range(len(Tree)):
-        prob_rp_wgt_list.append(rp_wgt_list[i]*prob_list[i])
-        prob_mu_wgt_list.append(mu_wgt_list[i]*prob_list[i])
+        if any(np.isnan(rp_wgt_list[i])):
+            pass
+        else:
+            prob_rp_wgt_list.append(rp_wgt_list[i]*prob_list[i])
+            prob_rp_list.append(prob_list[i])
+        if any(np.isnan(mu_wgt_list[i])):
+            pass
+        else:
+            prob_mu_wgt_list.append(mu_wgt_list[i]*prob_list[i])
+            prob_mu_list.append(prob_list[i])
 
-    return {"rp_wgt":sum(prob_rp_wgt_list).round(3),"mu_wgt":sum(prob_mu_wgt_list).round(3)}
+
+    #print np.sum(prob_mu_wgt_list)
+
+    return {"rp_wgt":(sum(prob_rp_wgt_list)/sum(prob_rp_list)).round(3),"mu_wgt":(sum(prob_mu_wgt_list)/sum(prob_mu_list)).round(3)}
 
 
 '''
@@ -371,7 +409,10 @@ print np.mean(BM_list)
 
 data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
 #data_W = (data/100+1).resample("W").prod().dropna()-1
-data = (data/100+1).resample("M").prod().dropna()-1
+data_D = data/100
+data_W = (data/100+1).resample("W").prod().dropna()-1
+data_M = (data/100+1).resample("M").prod().dropna()-1
+
 #data_W = data.pct_change().dropna()*100
 
 
@@ -392,12 +433,12 @@ mu_result_list = []
 index_list = []
 r = pr.R(use_pandas=True)
 r("library(MSwM)")
-for each in range(119,len(data)-1):
+for each in range(59,len(data_M)-1):
     #each = 95
     #data_M.index[each]
 
-    #data_frame = data[:data.index[each]]
-    data_frame = data[data.index[each-119]:data.index[each]]
+    #data_frame = data_M[:data_M.index[each]]
+    data_frame = data_M[data_M.index[each-59]:data_M.index[each]]
 
     #data_frame = data_frame[['SP500', 'Barclays_US_bond']]
     '''
@@ -405,19 +446,19 @@ for each in range(119,len(data)-1):
     print each
     print mu_wgt
 
-    rp_wgt = Ms_RP(data_frame, {'SP500':True, 'Barclays_US_bond':False})
+    rp_wgt = Ms_RP(data, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1})
     '''
-    multi_wgt = Ms_Multi(data_frame, {'000300.SH':True, 'AU9999.SGE':True, 'H11001.CSI':False}, 2)
+    multi_wgt = Ms_Multi(data_frame, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1}, 2)
     #multi_wgt = Ms_Multi(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False}, 2)
     mu_wgt = multi_wgt["mu_wgt"]
     rp_wgt = multi_wgt["rp_wgt"]
     print mu_wgt
-    print rp_wgt
+    #print rp_wgt
 
     #data_frame = data[data.index[each-120]:data.index[each]]
     rp_wgt_bm = Risk_Parity_Weight(data_frame.cov()).round(3)
-    mu_wgt_bm = Max_Utility_Weight_new(pd.DataFrame(data_frame.mean()), data_frame.cov(), 2, [(0.0,None)]*3).round(3)
-
+    mu_wgt_bm = Max_Utility_Weight(pd.DataFrame(data_frame.mean()), data_frame.cov(), 2, [(0.0,None)]*3).round(3)
+    print mu_wgt_bm
     '''
     mu_wgt = Ms_MU(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False})
     rp_wgt = Ms_RP(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False})
@@ -426,10 +467,10 @@ for each in range(119,len(data)-1):
     mu_wgt_bm = Max_Utility_Weight_new(pd.DataFrame(data_frame.mean()), data_frame.cov(), 2, [(0.0,None)]*3)
     '''
 
-    mu_ms_return = np.sum(mu_wgt*data.loc[data.index[each+1]])
-    mu_bm_return = np.sum(mu_wgt_bm*data.loc[data.index[each+1]])
-    rp_ms_return = np.sum(rp_wgt*data.loc[data.index[each+1]])
-    rp_bm_return = np.sum(rp_wgt_bm*data.loc[data.index[each+1]])
+    mu_ms_return = np.sum(mu_wgt*data_M.loc[data_M.index[each+1]])
+    mu_bm_return = np.sum(mu_wgt_bm*data_M.loc[data_M.index[each+1]])
+    rp_ms_return = np.sum(rp_wgt*data_M.loc[data_M.index[each+1]])
+    rp_bm_return = np.sum(rp_wgt_bm*data_M.loc[data_M.index[each+1]])
 
     #print bm_return
     mu_result = list(mu_wgt)+list(mu_wgt_bm)+[mu_ms_return]+[mu_bm_return]
@@ -437,8 +478,8 @@ for each in range(119,len(data)-1):
 
     mu_result_list.append(mu_result)
     rp_result_list.append(rp_result)
-    index_list.append(data.index[each+1])
-    print data.index[each+1]
+    index_list.append(data_M.index[each+1])
+    print data_M.index[each+1]
 
 pd.DataFrame(np.array(mu_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_CN.csv")
 pd.DataFrame(np.array(rp_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("RP_CN.csv")
