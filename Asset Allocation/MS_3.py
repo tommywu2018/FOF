@@ -4,7 +4,7 @@ import numpy as np
 import pyper as pr
 #import matplotlib.pyplot as plt
 
-from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight_new, Max_Utility_Weight, Max_Utility_Weight_MS
+from Allocation_Method import Risk_Parity_Weight, Max_Utility_Weight_new, Max_Utility_Weight, Max_Utility_Weight_MS, Max_Utility_Weight_new_MS
 
 #Simulation
 def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std_q=0.15):
@@ -215,13 +215,13 @@ def Ms_MU(return_frame, switch_map, lam):
                     else:
                         location = len(temp_columns)*(j+1)-sum(range(j+2))-(len(temp_columns)-i)
                         cov_mat_temp.append(temp_cov_list[location][int(each_leaf[j]),int(each_leaf[i])])
-        exp_ret = pd.DataFrame(exp_ret_temp, index=temp_columns)
+        exp_ret = pd.DataFrame(exp_ret_temp, index=temp_columns)*4
         exp_ret_list.append(exp_ret)
-        cov_mat = np.array(cov_mat_temp).reshape(len(temp_columns), len(temp_columns))
+        cov_mat = np.array(cov_mat_temp).reshape(len(temp_columns), len(temp_columns))*4
         cov_mat = pd.DataFrame(cov_mat, columns=temp_columns, index=temp_columns)
         cov_mat_list.append(cov_mat)
-        mu_wgt = Max_Utility_Weight_new(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
-        mu_wgt_list.append(mu_wgt)
+        #mu_wgt = Max_Utility_Weight_new(exp_ret, cov_mat, lam, [(0.0,None)]*len(temp_columns))
+        #mu_wgt_list.append(mu_wgt)
 
     prob_list =[]
     for each_leaf in Tree:
@@ -243,13 +243,14 @@ def Ms_MU(return_frame, switch_map, lam):
             filt_prob_list.append(0.0)
     prob_list = filt_prob_list
     '''
+    '''
     prob_wgt_list = []
     for i in range(len(Tree)):
         prob_wgt_list.append(mu_wgt_list[i]*prob_list[i])
-
-    mu_wgt_ms = Max_Utility_Weight_MS(exp_ret_list, cov_mat_list, prob_list, lam, [(0.0,None)]*len(temp_columns))
-
-    return sum(prob_wgt_list), mu_wgt_ms
+    '''
+    mu_wgt_ms = Max_Utility_Weight_new_MS(exp_ret_list, cov_mat_list, prob_list, lam, [(0.0,None)]*len(temp_columns)).round(3)
+    #sum(prob_wgt_list),
+    return mu_wgt_ms
 
 
 
@@ -413,9 +414,11 @@ for each in range(100):
 print np.mean(MS_list)
 print np.mean(BM_list)
 '''
+
+
 #中国实际数据
-data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/stock_bond_gold_CN.xlsx")
-#data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
+#data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/stock_bond_gold_CN.xlsx")
+data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
 #data_W = (data/100+1).resample("W").prod().dropna()-1
 data_D = data/100
 data_W = (data/100+1).resample("W").prod().dropna()-1
@@ -424,13 +427,12 @@ data_M = (data/100+1).resample("M").prod().dropna()-1
 #data_W = data.pct_change().dropna()*100
 
 
-
-#美国实际数据
 '''
+#美国实际数据
 data = pd.read_excel("F:\GitHub\FOF\Global Allocation\SBG_US_M.xlsx")
 #data = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SBG_US_M.xlsx")
 data = data.interpolate()
-data = data.dropna().pct_change().dropna()
+data_M = data.dropna().pct_change().dropna()
 '''
 
 
@@ -445,13 +447,13 @@ for each in range(59,len(data_M)-1):
     #each = 95
     #data_M.index[each]
 
-    #data_frame = data_M[:data_M.index[each]]
-    data_frame = data_M[data_M.index[each-59]:data_M.index[each]]
+    data_frame = data_W[:data_M.index[each]]
+    #data_frame = data_M[data_M.index[each-59]:data_M.index[each]]
 
     #data_frame = data_frame[['SP500', 'Barclays_US_bond']]
-    print "data OK!"
-    mu_wgt = Ms_MU(data_frame, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1}, 2)
-    mu_wgt_bm = Max_Utility_Weight(pd.DataFrame(data_frame.mean()), data_frame.cov(), 2, [(0.0,None)]*3).round(3)
+    #mu_wgt = Ms_MU(data_frame, {'SP500':2, 'London_gold':2, 'Barclays_US_bond':1}, 1)
+    mu_wgt = Ms_MU(data_frame, {'000300.SH':3, 'AU9999.SGE':2, 'H11001.CSI':1}, 10)
+    mu_wgt_bm = Max_Utility_Weight_new(pd.DataFrame(data_frame.mean())*4, data_frame.cov()*4, 5, [(0.0,None)]*3).round(3)
 
     print mu_wgt
     print mu_wgt_bm
@@ -491,11 +493,11 @@ for each in range(59,len(data_M)-1):
     #rp_result_list.append(rp_result)
     index_list.append(data_M.index[each+1])
     print data_M.index[each+1]
-    '''
-'''
+
+
 pd.DataFrame(np.array(mu_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_CN.csv")
 #pd.DataFrame(np.array(rp_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("RP_CN.csv")
-'''
+
 '''
 pd.DataFrame(np.array(mu_result_list), columns=list(data.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_e.csv")
 pd.DataFrame(np.array(rp_result_list), columns=list(data.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("Rp_e.csv")
