@@ -11,6 +11,9 @@ import xlrd
 from xlwt import Workbook, easyxf
 w.start()
 
+forwardweeks = 54 #数据应包含上周数据及之前52周
+enddate = "2017-06-23"
+
 def Wsd_Data_Install_Weekly(code, fields, enddate, forwardweeks):
     temp_data = w.wsd(code, fields, "ED-%sW"%forwardweeks, enddate, "Period=W")
     if temp_data.ErrorCode == 0:
@@ -216,9 +219,6 @@ def Xls_Writer_pctchg_Simple(ws, data, all_data, rowno, colno, field):
         raise Exception("not defined field!")
 
 
-
-forwardweeks = 54 #数据应包含上周数据及之前52周
-enddate = "2017-05-12"
 
 '''
 格式定义

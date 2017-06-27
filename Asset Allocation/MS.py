@@ -1,4 +1,5 @@
 # coding=utf-8
+
 import pandas as pd
 import numpy as np
 import pyper as pr
@@ -31,26 +32,18 @@ def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std
 def Ms_R(return_list):
     #return_list = list(data_M["AU9999.SGE"])
     return_frame = pd.DataFrame(np.array([return_list, [1]*len(return_list)]).T, columns=['return', 'One'])
-    r("rm(list = ls())")
     r.assign("rframe", return_frame)
-    Coef = None
-    break_i = 0
-    while Coef is None:
-        r('''
-        lm_return <- lm(formula=return~0+One, data=rframe)
-        lm_mswm <- msmFit(lm_return, k=2, p=0, sw=c(T,T))
-        rstd <- lm_mswm@std
-        rCoef <- lm_mswm@Coef
-        rtransMat <- lm_mswm@transMat
-        rprob_smo <- lm_mswm@Fit@smoProb[-1,]
-        #print(lm_mswm@Fit@logLikel)
-        raic_mswn <- AIC(lm_mswm)
-        raic_lm <- AIC(lm_return)
-        ''')
-        Coef = r.get("rCoef")
-        break_i = break_i + 1
-        if break_i > 100:
-            break
+    r('''
+    lm_return <- lm(formula=return~0+One, data=rframe)
+    lm_mswm <- msmFit(lm_return, k=2, p=0, sw=c(T,T))
+    rstd <- lm_mswm@std
+    rCoef <- lm_mswm@Coef
+    rtransMat <- lm_mswm@transMat
+    rprob_smo <- lm_mswm@Fit@smoProb[-1,]
+    #print(lm_mswm@Fit@logLikel)
+    raic_mswn <- AIC(lm_mswm)
+    raic_lm <- AIC(lm_return)
+    ''')
     aic_mswm = r.get("raic_mswm")
     aic_lm = r.get("raic_lm")
     if aic_mswm < aic_lm:
@@ -368,23 +361,56 @@ print np.mean(MS_list)
 print np.mean(BM_list)
 '''
 #中国实际数据
-
-data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
+'''
+data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/stock_bond_gold_CN.xlsx")
 #data_W = (data/100+1).resample("W").prod().dropna()-1
-data = (data/100+1).resample("M").prod().dropna()-1
+data_M = (data/100+1).resample("W").prod().dropna()-1
+data_W = data_M*100
 #data_W = data.pct_change().dropna()*100
 
+ms_list = []
+bm_list = []
+for each in range(250,len(data_W)-1):
+    #each = 95
+    #data_M.index[each]
+    r = pr.R(use_pandas=True)
+    r("library(MSwM)")
+    data_frame = data_W[:data_W.index[each]]
 
+    wgt = Ms_RP(data_frame, {'000300.SH':True, 'AU9999.SGE':False, 'H11001.CSI':False})
+    #wgt = Ms_RP(data_frame, {'SP500':True, 'London_gold':False, 'Barclays_US_bond':False})
+    wgt_bm = Risk_Parity_Weight(data_frame.cov())
+
+    #wgt = pd.Series([0.2, 0.2, 0.6], index=data_frame.columns)
+    print wgt
+    print data_W.loc[data_W.index[each+1]]
+    ms_return = np.sum(wgt*data_W.loc[data_W.index[each+1]])/100
+    bm_return = np.sum(wgt_bm*data_W.loc[data_W.index[each+1]])/100
+    print data_W.index[each+1]
+    #print ms_return
+    #print bm_return
+    ms_list.append(ms_return)
+    bm_list.append(bm_return)
+
+print (pd.Series(ms_list)+1).prod()
+print np.std(pd.Series(ms_list))
+print (pd.Series(bm_list)+1).prod()
+print np.std(pd.Series(bm_list))
+'''
 
 #美国实际数据
-'''
+
 data = pd.read_excel("F:\GitHub\FOF\Global Allocation\SBG_US_M.xlsx")
-#data = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SBG_US_M.xlsx")
+
+data = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SBG_US_M.xlsx")
+
 data = data.interpolate()
 data = data.dropna().pct_change().dropna()
-'''
+
+data
 
 
+#data_W = data.pct_change().dropna()*100
 
 
 rp_result_list = []
@@ -407,8 +433,8 @@ for each in range(119,len(data)-1):
 
     rp_wgt = Ms_RP(data_frame, {'SP500':True, 'Barclays_US_bond':False})
     '''
-    multi_wgt = Ms_Multi(data_frame, {'000300.SH':True, 'AU9999.SGE':True, 'H11001.CSI':False}, 2)
-    #multi_wgt = Ms_Multi(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False}, 2)
+
+    multi_wgt = Ms_Multi(data_frame, {'SP500':True, 'London_gold':True, 'Barclays_US_bond':False}, 2)
     mu_wgt = multi_wgt["mu_wgt"]
     rp_wgt = multi_wgt["rp_wgt"]
     print mu_wgt
@@ -431,6 +457,7 @@ for each in range(119,len(data)-1):
     rp_ms_return = np.sum(rp_wgt*data.loc[data.index[each+1]])
     rp_bm_return = np.sum(rp_wgt_bm*data.loc[data.index[each+1]])
 
+
     #print bm_return
     mu_result = list(mu_wgt)+list(mu_wgt_bm)+[mu_ms_return]+[mu_bm_return]
     rp_result = list(rp_wgt)+list(rp_wgt_bm)+[rp_ms_return]+[rp_bm_return]
@@ -440,8 +467,8 @@ for each in range(119,len(data)-1):
     index_list.append(data.index[each+1])
     print data.index[each+1]
 
-pd.DataFrame(np.array(mu_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_CN.csv")
-pd.DataFrame(np.array(rp_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("RP_CN.csv")
+pd.DataFrame(np.array(mu_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_3.csv")
+pd.DataFrame(np.array(rp_result_list), columns=list(data_frame.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("RP_3.csv")
 
 '''
 pd.DataFrame(np.array(mu_result_list), columns=list(data.columns)+["s_bm", "g_bm", "b_bm"]+["ms_return", "bm_return"], index=index_list).to_csv("MU_e.csv")
