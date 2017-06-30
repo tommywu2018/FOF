@@ -322,10 +322,26 @@ def Output_rank(input_df):
         rank.iloc[i-1][pd.DataFrame(input_df).columns]=i
     return rank
 
+def Eng_to_Ch(eng_asset):
+    if eng_asset=='bond':
+        ch_asset=u'债券ETF'
+    if eng_asset=='stock_large':
+        ch_asset=u'大盘股票ETF'
+    if eng_asset=='stock_small':
+        ch_asset=u'小盘股票ETF'
+    if eng_asset=='stock_HongKong':
+        ch_asset=u'港股ETF'
+    if eng_asset=='stock_US':
+        ch_asset=u'美股ETF'
+    if eng_asset=='gold':
+        ch_asset=u'黄金ETF'
+    if eng_asset=='money_fund':
+        ch_asset=u'货币基金ETF'
+    return ch_asset
 ###########################################################################################################################
 
-def Get_ETF_trading_blocks(current_asset,balance_date,last_balance_date,asset_weight,num_ETF):
-    ETF_code=pd.read_csv('%s_ETF.csv'%(current_asset))
+def Get_ETF_trading_blocks(current_asset,balance_date,last_balance_date,yesterday_balance_date,asset_weight,invest_capital,num_ETF):
+    ETF_code=pd.read_csv('%s_ETF.csv'%(current_asset),encoding= 'gb2312')
     str_ETF=Get_str(ETF_code,'id')
 
     # 取份额，本月平均换手率，贴水率
@@ -336,18 +352,32 @@ def Get_ETF_trading_blocks(current_asset,balance_date,last_balance_date,asset_we
 
     # 分别取其排名
     rank_ETF_pool=pd.concat([Output_rank(sort_turn),Output_rank(sort_unit),Output_rank(sort_discount_ratio)],axis=1)
+
+    allprice=tradingdata_fetch(str_ETF,'rt_last')
+    yesterday_close=data_fetch(str_ETF,'close',yesterday_balance_date,yesterday_balance_date)
+    noprice_code=allprice[allprice['rt_last']==0.00].index.tolist()
+    allprice['rt_last'].loc[noprice_code]=yesterday_close.loc[noprice_code]['close']
+    available_allprice=allprice[allprice['rt_last']!=0.00]
+
+
+    num_available_ETF=len(available_allprice)
+
+    num_ETF=min(num_available_ETF,num_ETF)
     # 选择流动性较好的前num_ETF只ETF
+    rank_ETF_pool=rank_ETF_pool.loc[available_allprice.index.tolist()]
     selected=rank_ETF_pool.sort_values('turn').head(num_ETF).index.tolist()
-    str_selected=Get_str(pd.DataFrame(selected,columns=['id']),'id')
+    #str_selected=Get_str(pd.DataFrame(selected,columns=['id']),'id')
     # 实时行情
-    price=tradingdata_fetch(str_selected,'rt_last')
+    price=allprice.loc[selected]
     # 交易的份额
     money=asset_weight[asset_weight['asset']==current_asset]['amount']
-    target_trading=pd.DataFrame(index=selected,columns=['blocks'])
+    target_trading=pd.DataFrame(index=selected,columns=['blocks','weight'])
+
     for j in selected:
         target_trading.loc[j]['blocks']=np.floor(float(money/num_ETF/price.loc[j]['rt_last']/100))
+        # 计算真实的资金比例
+        target_trading.loc[j]['weight']=price.loc[j]['rt_last']*target_trading.loc[j]['blocks']*100/invest_capital
 
-    #print ('----Trading blocks for %s have been successfully calculated!----'%(current_asset))
     cash=money-(target_trading['blocks']*100*price['rt_last']).sum()
     return target_trading,float(cash)
 
@@ -357,6 +387,7 @@ def Get_ETF_trading_blocks(current_asset,balance_date,last_balance_date,asset_we
 def Portfolio_Form(risk_adverse):
     import pandas as pd
     import numpy as np
+    import datetime as dt
     import os
 
     # 投资人所投资产
@@ -426,15 +457,31 @@ def Portfolio_Form(risk_adverse):
 
     balance_date=History_Data.index[-1]
     last_balance_date=History_Data.index[-2]
+    yesterday_balance_date=dt.datetime.today()-dt.timedelta(days=1)
 
     asset_class=['bond','stock_large','stock_small','stock_HongKong','stock_US','gold']
+    allcode=pd.read_csv('ETF_code.csv',encoding='gb2312',index_col=0)
 
     Final_trading=pd.DataFrame()
     total_cash=0
     for current_asset in asset_class:
-        allocation=Get_ETF_trading_blocks(current_asset, balance_date, last_balance_date, asset_weight, 2)[0]
-        temp_cash=Get_ETF_trading_blocks(current_asset, balance_date, last_balance_date, asset_weight, 2)[1]
+        allocation=Get_ETF_trading_blocks(current_asset,balance_date,last_balance_date,yesterday_balance_date,asset_weight,invest_capital,2)[0]
+        allocation['asset']=Eng_to_Ch(current_asset)
+        #print ('----Trading blocks for %s have been successfully calculated!----'%(current_asset))
+        temp_cash=Get_ETF_trading_blocks(current_asset,balance_date,last_balance_date,yesterday_balance_date,asset_weight,invest_capital,2)[1]
         total_cash=total_cash+temp_cash
         Final_trading=pd.concat([Final_trading,allocation],axis=0)
 
-    return [list(Final_trading.index), list(Final_trading.iloc[:,0].values)]
+
+    Final_trading=Final_trading[Final_trading['blocks']!=0]
+    Final_trading['name']=allcode.loc[Final_trading.index.tolist()]
+
+    # 计算现金和货基比例等
+    cash_df=pd.DataFrame(index=[u'现金',u'货币型基金'],columns=['blocks','weight','asset','name'])
+    Final_trading=pd.concat([Final_trading,cash_df],axis=0)
+    Final_trading.loc[u'现金']=[total_cash,total_cash/invest_capital,u'现金',u'现金']
+    money_fund_amt=invest_capital-asset_weight['amount'].sum()
+    Final_trading.loc[u'货币型基金']=[money_fund_amt,money_fund_amt/invest_capital,u'货币型基金',u'货币型基金']
+
+
+    return Final_trading.to_string()

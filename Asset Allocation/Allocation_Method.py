@@ -312,3 +312,23 @@ def Inverse_Minimize(wgt, cov_mat, lam):
     inver_ret = pd.Series(index=cov_mat.index, data=res['x'])
 
     return inver_ret
+
+def VaR_Cal(conf_level, ret_list, cov_mat, period, *weight):
+    import numpy as np
+    from scipy.stats import norm
+
+    if type(ret_list) != list:
+        ret = ret_list
+        sigma = cov_mat
+    else:
+        ret = np.matrix(ret_list) * np.matrix(weight[0]).T
+        omega = np.matrix(cov_mat.values)
+        sigma = np.matrix(weight[0]) * omega * np.matrix(weight[0]).T
+
+    VaR = norm.ppf(1-conf_level, ret, sigma)
+    if type(VaR) == np.ndarray:
+        VaR = VaR[0][0]
+    else:
+        pass
+
+    return VaR
