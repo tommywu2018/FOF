@@ -55,10 +55,24 @@ asset_list = ["bond", "stock_large", "stock_small",
 risk_list = ["stock_large", "stock_small",
               "stock_HongKong", "stock_US", "gold"]
 bnds = [(0.0, None), (0.0, None), (0.0, None),
-        (0.0, None), (0.0, None), (0.0, None)]
+        (0.0, None), (0.0, None)]
 asset_level_1 = pd.Series([-0.01, -0.08, -0.08, -0.08, -0.08, -0.08], index=asset_list)
 asset_level_2 = pd.Series([-0.02, -0.16, -0.16, -0.16, -0.16, -0.16], index=asset_list)
+asset_level_1 = pd.Series([-1.0]*len(asset_list), index=asset_list)
+asset_level_2 = pd.Series([-1.0]*len(asset_list), index=asset_list)
 #bnds = [(0.1, 0.6), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.0, 0.3)]
+
+
+#美国实际数据
+History_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/SBG_US_M.xlsx")
+Predict_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/SBG_US_M_P.xlsx")
+asset_list = [ "Barclays_US_bond", "SP500", "London_gold"]
+risk_list = ["SP500", "London_gold"]
+
+bnds = [(0.0, None), (0.0, None)]
+#bnds = [(0.0, None), (0.0, None), (0.0, None)]
+asset_level_1 = pd.Series([-0.01, -0.08, -0.08], index=asset_list)
+asset_level_2 = pd.Series([-0.02, -0.16, -0.16], index=asset_list)
 
 year_delta = 5
 tau = 1.0
@@ -74,11 +88,13 @@ elif portfolio_name == "jinqu":
 else:
     raise Exception("Wrong portfolio_name!")
 
+money_weight = 1.0
+
 pct_list = []
 weight_list = []
 date_list = []
-asset_drawdown = pd.Series([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], index=asset_list)
-asset_position = pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0], index=asset_list)
+asset_drawdown = pd.Series([0.0]*len(asset_list), index=asset_list)
+asset_position = pd.Series([1.0]*len(asset_list), index=asset_list)
 for each_date in Predict_Data.index[60:-1]:
     last_date = History_Data.index[list(Predict_Data.index).index(each_date)-1]  # 当前月份日期
     next_date = each_date  # 下一月份日期
@@ -92,8 +108,10 @@ for each_date in Predict_Data.index[60:-1]:
     # 基础设定
     history_data = History_Data[str(start_year) + '-' + str(start_month): last_date]
     predict_data = Predict_Data[str(start_year) + '-' + str(start_month): last_date]
-    cov_mat = history_data[asset_list].cov() * 12.0
-    for each_asset in asset_list:
+    cov_mat = history_data[risk_list].cov() * 12.0
+    #cov_mat = history_data[asset_list].cov() * 12.0
+    for each_asset in risk_list:
+    #for each_asset in asset_list:
         temp_drawdown = (asset_drawdown[each_asset]+1.0)*(history_data[each_asset][-1]+1.0)-1
         if temp_drawdown >= 0:
             temp_drawdown = 0
@@ -108,13 +126,13 @@ for each_date in Predict_Data.index[60:-1]:
     P = np.diag([1] * len(mkt_wgt))
 
     conf_list = list()
-    for each in asset_list:
+    for each in risk_list:
         conf_temp = ((history_data[each][str(start_year) + '-' + str(start_month):] -
                       predict_data[each][str(start_year) + '-' + str(start_month):])**2).mean() * 12.0
         conf_list.append(conf_temp)
     conf_mat = np.matrix(np.diag(conf_list))
 
-    Q = np.matrix(Predict_Data[asset_list].loc[next_date])
+    Q = np.matrix(Predict_Data[risk_list].loc[next_date])
 
     com_ret, com_cov_mat = Combined_Return_Distribution(
         2, cov_mat, tau, mkt_wgt, P, Q, conf_mat)
@@ -122,30 +140,36 @@ for each_date in Predict_Data.index[60:-1]:
     #print com_ret
 
     weight_bl = Max_Utility_Weight(com_ret, com_cov_mat, lam, bnds)
-    print weight_bl
+    #print weight_bl
 
-    rf_ret = (history_data['bond'].mean()+history_data['money'].mean())/2 * 12
+
+    rf_ret = history_data[list(set(asset_list)-set(risk_list))[0]].mean() * 12
+
     if len(pct_list) == 0:
         current_nv = 1
     else:
         current_nv = (np.array(pct_list)+1).prod()
-    print "current_nv"
-    print current_nv
-    cushion_per = Cushion_Cal(nv=current_nv, rf_ret=rf_ret, past_time=len(date_list)/12, target_ret=0)
+    #print "current_nv"
+    #print current_nv
+    cushion_per = Cushion_Cal(nv=current_nv, rf_ret=rf_ret, past_time=len(date_list)/12, target_ret=0.075)
 
-    print "cushion"
-    print cushion_per
+    #print "cushion"
+    #print cushion_per
 
     para_m = 0.01 / (-VaR_Cal(0.99, [0]*len(risk_list), history_data[risk_list].cov()*12.0, 1/12, weight_bl[risk_list]))
 
-    print "para_m"
-    print para_m
-    print "--------------"
+    #print "para_m"
+    #print para_m
+    #print "--------------"
 
-    weight_risk = weight_bl[risk_list]/sum(weight_bl[risk_list])*cushion_per
+    risk_weight = min(cushion_per, 1.0)
+
+    weight_risk = weight_bl[risk_list] * risk_weight
+    print weight_risk
     weight_bl[risk_list] = weight_risk
-    weight_bl['bond'] = 1-sum(weight_risk)
-    print weight_bl
+    #weight_bl[risk_list] = [0.0]*len(risk_list)
+    weight_bl[list(set(asset_list)-set(risk_list))[0]] = money_weight-sum(weight_risk[risk_list])
+
 
     for each_asset in asset_list:
         if asset_position[each_asset] == 1:
@@ -170,7 +194,9 @@ for each_date in Predict_Data.index[60:-1]:
             else:
                 pass
 
-    weight_bl = weight_bl*asset_position
+
+    weight_bl = (weight_bl*asset_position).round(2)
+    print weight_bl
     port_ret = sum(weight_bl*History_Data[asset_list].loc[next_date])*money_weight + (1-money_weight)*History_Data["money"].loc[next_date]
     #print sum(weight_bl*History_Data[asset_list].loc[next_date])*money_weight + money_weight*History_Data["money"].loc[next_date]
     pct_list.append(port_ret)

@@ -4,7 +4,7 @@
 @Time: 2017/1/19 09:30
 """
 
-portfolio_name = u"wenjian"
+portfolio_name = u"pingheng"
 
 from Allocation_Method import Risk_Parity_Weight, Combined_Return_Distribution, Max_Utility_Weight
 import pandas as pd
