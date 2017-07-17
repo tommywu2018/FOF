@@ -151,7 +151,7 @@ for each_date in Predict_Data.index[60:-1]:
         current_nv = (np.array(pct_list)+1).prod()
     #print "current_nv"
     #print current_nv
-    cushion_per = Cushion_Cal(nv=current_nv, rf_ret=rf_ret, past_time=len(date_list)/12, target_ret=0.075)
+    cushion_per = Cushion_Cal(nv=current_nv, rf_ret=rf_ret, past_time=len(date_list)/12, target_ret=0.06)
 
     #print "cushion"
     #print cushion_per
@@ -162,7 +162,7 @@ for each_date in Predict_Data.index[60:-1]:
     #print para_m
     #print "--------------"
 
-    risk_weight = min(cushion_per, 1.0)
+    risk_weight = min(cushion_per, 0.3)
 
     weight_risk = weight_bl[risk_list] * risk_weight
     print weight_risk

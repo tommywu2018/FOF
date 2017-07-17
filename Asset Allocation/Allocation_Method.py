@@ -188,12 +188,12 @@ def Max_Utility_Weight_MS(exp_ret_list, cov_mat_list, prob_list, lam, bnds):
     #print exp_ret
 
     def fun(x):
-        gold = 0
+        goal = 0
         for i in range(len(exp_ret_list)):
             omega = np.matrix(cov_mat_list[i].values)
             ret = np.matrix(exp_ret_list[i])
-            gold = gold - prob_list[i]*(np.matrix(x) * ret - 0.5 * lam * np.sqrt(np.matrix(x) * omega * np.matrix(x).T))
-        return gold
+            goal = goal - prob_list[i]*(np.matrix(x) * ret - 0.5 * lam * np.sqrt(np.matrix(x) * omega * np.matrix(x).T))
+        return goal
 
     x0 = np.ones(len(exp_ret_list[0])) / len(exp_ret_list[0])
     bnds = tuple(bnds)
@@ -222,12 +222,12 @@ def Max_Utility_Weight_new_MS(exp_ret_list, cov_mat_list, prob_list, lam, bnds):
     #print exp_ret
 
     def fun(x):
-        gold = 0
+        goal = 0
         for i in range(len(exp_ret_list)):
             omega = np.matrix(cov_mat_list[i].values)
             ret = np.matrix(exp_ret_list[i])
-            gold = gold - prob_list[i]*(np.matrix(x) * ret - 0.5 * lam * (np.matrix(x) * omega * np.matrix(x).T))
-        return gold
+            goal = goal - prob_list[i]*(np.matrix(x) * ret - 0.5 * lam * (np.matrix(x) * omega * np.matrix(x).T))
+        return goal
 
     x0 = np.ones(len(exp_ret_list[0])) / len(exp_ret_list[0])
     bnds = tuple(bnds)
@@ -332,3 +332,32 @@ def VaR_Cal(conf_level, ret_list, cov_mat, period, *weight):
         pass
 
     return VaR
+
+def Combined_Return_Distribution_MS(lam, exp_ret, cov_mat, tau, P, Q, conf_mat):
+    '''
+    计算BL模型中给定主观观点后的修正预期收益率的均值与方差协方差矩阵
+    :param lam: 风险厌恶系数-float
+    :param cov_mat: 资产的方差协方差矩阵-DataFrame
+    :param tau: BL模型中历史方差协方差矩阵的权重-float
+    :param P: 观点矩阵-matrix
+    :param Q: 观点收益向量-matrix
+    :param conf_mat: 信心矩阵-matrix
+    :return: 预期收益-DataFrame，预期方差协方差矩阵-DataFrame
+    '''
+    import numpy as np
+    import pandas as pd
+
+    if all(cov_mat.index == exp_ret.index) == False:
+        exp_ret = exp_ret.reindex(cov_mat.index)
+
+    index_columns = cov_mat.index
+    exp_ret = np.matrix(exp_ret)
+    cov_mat = np.matrix(cov_mat)
+    exp_cov_mat = ((tau * cov_mat).I + (P.T * conf_mat.I * P)).I
+
+    exp_ret = exp_cov_mat * ((tau * cov_mat).I * exp_ret + P.T * conf_mat.I * Q.T)
+
+    exp_ret = pd.DataFrame(exp_ret, index=index_columns)
+    exp_cov_mat = pd.DataFrame(exp_cov_mat, columns=index_columns, index=index_columns)
+
+    return exp_ret, exp_cov_mat
