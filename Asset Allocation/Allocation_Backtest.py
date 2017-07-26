@@ -125,8 +125,16 @@ def Performance(return_series, rf_ret):
     (return_series + 1).cumprod().plot()
     return [end_value, annual_return, annual_variance, sharpe_ratio, max_drawdown]
 
+def NV(retrun_series, date_index, portfolio_name):
+    nv = (return_series + 1).cumprod()
+    pd.Series(np.array(nv), index=date_index).to_csv("F:\GitHub\FOF\Asset Allocation\\nv_%s.csv"%portfolio_name)
 
-return_series = pd.read_csv("F:\GitHub\FOF\Asset Allocation\\backtest_wenjian.csv", header=None)[1]
+for each in range(1,11):
+    return_series = pd.read_csv("F:\GitHub\FOF\Asset Allocation\\backtest_%s.csv"%each, header=None)[1]
+    date_index = pd.read_csv("F:\GitHub\FOF\Asset Allocation\\backtest_%s.csv"%each, header=None)[0]
+    NV(return_series, date_index, each)
+
+return_series = pd.read_csv("F:\GitHub\FOF\Asset Allocation\\backtest_7.csv", header=None)[1]
 print Performance(return_series, 0.025)
 '''
 '''

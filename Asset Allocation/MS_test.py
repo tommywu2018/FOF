@@ -10,15 +10,18 @@ len(return_list)
 return_list = list(data_W['SP500'])[0:165]
 return_list = list(data_W['SP500'])[165:329]
 return_list = list(data_W['SP500'])[329:]
+return_list = list(data["000300.SH"])
 return_frame = pd.DataFrame(np.array([return_list, [1]*len(return_list)]).T, columns=['return', 'One'])
 r = pr.R(use_pandas=True)
 r("library(MSwM)")
 
+return_frame
 
+r("rm(list = ls())")
 r.assign("rframe", return_frame)
 r('''
 lm_return <- lm(formula=return~0+One, data=rframe)
-lm_mswm <- msmFit(lm_return, k=2, p=0, sw=c(F,T))
+lm_mswm <- msmFit(lm_return, k=3, p=0, sw=c(T,T))
 rstd <- lm_mswm@std
 rCoef <- lm_mswm@Coef
 rtransMat <- lm_mswm@transMat
@@ -30,6 +33,7 @@ rlogLikel <- lm_mswm@Fit@logLikel
 summary(lm_mswm)
 ''')
 r.get("rstd")
+test == None
 r.get("rCoef")
 print r.get("rtransMat")
 r.get("raic_mswm")
@@ -46,9 +50,7 @@ a
 test[0]
 np.where(test, round(test, 4), 0)
 '''
-<<<<<<< HEAD
 
-=======
 '''
 $std
 $model
@@ -71,7 +73,7 @@ $Fit
     slot"logLikel"
 $class
 '''
->>>>>>> origin/master
+
 
 def Performance(return_series, rf_ret):
     end_value = (return_series + 1).prod()
@@ -81,12 +83,12 @@ def Performance(return_series, rf_ret):
     max_drawdown = max(((return_series + 1).cumprod().cummax()-(return_series + 1).cumprod())/(return_series + 1).cumprod().cummax())
     return [end_value, annual_return, annual_variance, sharpe_ratio, max_drawdown]
 
-<<<<<<< HEAD
 def Comparance(file_path):
     data = pd.read_csv(file_path)
     ms_per = Performance(data["ms_return"], 0.04)
     bm_per = Performance(data["bm_return"], 0.04)
-    ms_turnover = data[["SP500", "London_gold", "Barclays_US_bond"]].diff().dropna().abs().sum(axis=1).mean()*12
+    #ms_turnover = data[["SP500", "London_gold", "Barclays_US_bond"]].diff().dropna().abs().sum(axis=1).mean()*12
+    ms_turnover = data[['000300.SH', 'AU9999.SGE', 'H11001.CSI']].diff().dropna().abs().sum(axis=1).mean()*12
     bm_turnover = data[["s_bm", "g_bm", "b_bm"]].diff().dropna().abs().sum(axis=1).mean()*12
     ms_per.append(ms_turnover)
     bm_per.append(bm_turnover)
@@ -102,8 +104,8 @@ def Comparance(file_path):
     bm_per.append(bm_turnover)
     return pd.DataFrame(np.array([ms_per, bm_per]).T, columns=[file_path[-8:-4] + "_ms", file_path[-8:-4] + "_bm"], index=['end_value', 'annual_return', 'annual_variance', 'sharpe_ratio', 'max_drawdown', 'turnover'])
 
-Comparance("F:\GitHub\FOF\MU_e.csv").to_clipboard()
-=======
+Comparance("F:\GitHub\FOF\RP_CN.csv").to_clipboard()
+
 def Turnover(position_data, return_data):
     position_data.columns = return_data.columns
     turnover_list = []
@@ -113,15 +115,17 @@ def Turnover(position_data, return_data):
         endvalue = sum(position_data.loc[current_date] * (return_data.loc[current_date]+1))
         current_position = position_data.loc[current_date] * (return_data.loc[current_date]+1)
         next_position = endvalue * position_data.loc[next_date]
-        current_turnover = (next_position - current_position).abs().sum()/
+        print current_date
+        current_turnover = (next_position - current_position).abs().sum()/current_position.sum()
         turnover_list.append(current_turnover)
     return np.mean(turnover_list)*12
 
 def Comparance(file_path, return_data):
     data = pd.read_csv(file_path, parse_dates=True, index_col=['Unnamed: 0'])
-    ms_per = Performance(data["ms_return"], 0.04)
-    bm_per = Performance(data["bm_return"], 0.04)
-    ms_turnover = Turnover(data[["SP500", "London_gold", "Barclays_US_bond"]], return_data)
+    ms_per = Performance(data["ms_return"], 0.025)
+    bm_per = Performance(data["bm_return"], 0.025)
+    ms_turnover = Turnover(data[["000300.SH", "H11001.CSI", "AU9999.SGE"]], return_data)
+    #ms_turnover = Turnover(data[["SP500", "London_gold", "Barclays_US_bond"]], return_data)
     bm_turnover = Turnover(data[["s_bm", "g_bm", "b_bm"]], return_data)
     ms_per.append(ms_turnover)
     bm_per.append(bm_turnover)
@@ -163,9 +167,13 @@ def Comparance(file_path, return_data):
     bm_per.append(nega_percent)
     return pd.DataFrame(np.array([ms_per, bm_per]).T, columns=[file_path[-8:-4] + "_ms", file_path[-8:-4] + "_bm"], index=['end_value', 'annual_return', 'annual_variance', 'sharpe_ratio', 'max_drawdown', 'turnover', 'profit%', 're-profit%', 'posi%', 'nega%'])
 
-return_data = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SBG_US_M.xlsx").interpolate().dropna().pct_change().dropna()
+return_data = pd.read_excel("F:\GitHub\FOF\Global Allocation\SBG_US_M.xlsx").interpolate().dropna().pct_change().dropna()
 
-Comparance(u"/Users/WangBin-Mac/Documents/研究生文件/asset allocation regime shift/MS结果/MU_h.csv", return_data).to_clipboard()
+data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
+return_data = (data/100+1).resample("M").prod().dropna()-1
+
+
+Comparance("F:\GitHub\FOF\MU_CN.csv", return_data).to_clipboard()
 
 data = pd.read_csv(u"/Users/WangBin-Mac/Documents/研究生文件/asset allocation regime shift/MS结果/10-00.csv", parse_dates=True, index_col=['Unnamed: 0'])
 
@@ -186,4 +194,7 @@ test3 = test[test['a']>0]
 test3[test3['b']>0].corr()
 
 test.corr()
->>>>>>> origin/master
+
+import pandas as pd
+test = pd.DataFrame([1,2,3,4])
+test.to_string().replace('\n', '')
