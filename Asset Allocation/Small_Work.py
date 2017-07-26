@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-<<<<<<< HEAD
 data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/History_Data.xlsx")
 
 
@@ -15,7 +14,7 @@ drawdown.hist(bins=50)
 print drawdown.quantile(0.5)
 plt.show()
 drawdown.plot()
-=======
+
 data = pd.read_excel("History_Data.xlsx")
 return_series = data["bond"]
 drawdown = ((return_series + 1).cumprod().cummax()-(return_series + 1).cumprod())/(return_series + 1).cumprod().cummax()
@@ -78,4 +77,169 @@ index_code_list = ["000300.SH", "000905.SH", "SPX.GI", "HSI.HI", "H11001.CSI", "
 temp_data = w.wsd(index_code_list, "close", "2017-02-01", "2017-03-30")
 data = pd.DataFrame(np.array(temp_data.Data).T, index=temp_data.Times, columns=temp_data.Codes)
 data.to_excel("D:\\FOF\\index.xlsx")
->>>>>>> origin/master
+
+import pandas as pd
+import numpy as np
+
+data = pd.read_excel(u"/Users/WangBin-Mac/FOF/Asset Allocation/大类资产_D.xlsx")
+gold_data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/gold.xlsx")
+data = data/100
+
+data = pd.merge(data, gold_data, how='left', left_index=True, right_index=True)
+data.to_excel("/Users/WangBin-Mac/FOF/Asset Allocation/History_Data_D.xlsx")
+
+if __name__ == "__main__":
+
+    pool = multiprocessing.Pool(processes=4)
+    result_list = []
+    for each_i in Aminud_data.columns:
+        for each_j in Aminud_data.columns:
+            result_list.append(pool.apply_async(func, (each_i, each_j, )))
+
+    pool.close()
+    pool.join()
+
+    for res in result_list:
+        temp = res.get()
+        Granger_result.loc[temp[1], temp[0]] = temp[2]
+
+
+data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_cppi_bl_step.xlsx")
+plt.scatter(data['md'], data['ar'])
+plt.savefig("/Users/WangBin-Mac/FOF/Asset Allocation/md-ar.png")
+plt.cla()
+
+
+efficient_set = []
+for index, row in data.iterrows():
+    temp_ar = row.ar
+    temp_av = row.av
+    indicator = 0
+    for each_index, each_row in data.iterrows():
+        if each_row.ar > temp_ar and each_row.av < temp_av:
+            break
+        else:
+            indicator += 1
+    if indicator == len(data):
+        efficient_set.append(list(row))
+    else:
+        pass
+
+efficient_data = pd.DataFrame(np.array(efficient_set), columns=data.columns)
+plt.scatter(efficient_data['av'], efficient_data['ar'])
+plt.savefig("/Users/WangBin-Mac/FOF/Asset Allocation/md-ar2.png")
+efficient_data.to_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_cppi_bl_step_efficient.xlsx")
+
+efficient_md_set = []
+for index, row in data.iterrows():
+    temp_ar = row.ar
+    temp_md = row.md
+    indicator = 0
+    for each_index, each_row in data.iterrows():
+        if each_row.ar > temp_ar and each_row.md < temp_md:
+            break
+        else:
+            indicator += 1
+    if indicator == len(data):
+        efficient_md_set.append(list(row))
+    else:
+        pass
+
+efficient_md_data = pd.DataFrame(np.array(efficient_md_set), columns=data.columns)
+plt.scatter(efficient_md_data['md'], efficient_md_data['ar'])
+plt.show()
+efficient_md_data.to_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_cppi_bl_step_efficient_md.xlsx")
+
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+
+
+def effect_analysis(data, res, param_name):
+    if len(res.params) == 5:
+        b = res.params[param_name]
+        if b > 0:
+            return param_name+":positive"
+        else:
+            return param_name+":negative"
+    elif len(res.params) == 9:
+        a = res.params[param_name+'2']
+        b = res.params[param_name]
+        extreme_point = -b/(2*a)
+        param_range = set(data[param_name])
+        min_point = min(param_range)
+        max_point = max(param_range)
+        if extreme_point > min_point and extreme_point < max_point:
+            if a*extreme_point**2+b*extreme_point < a*min_point**2+b*min_point:
+                return param_name+":negative-positive - [%.3f, %.3f, %.3f]"%(min_point,extreme_point,max_point)
+
+            else:
+                return param_name+":positive-negative - [%.3f, %.3f, %.3f]"%(min_point,extreme_point,max_point)
+        else:
+            if a*min_point**2+b*min_point < a*max_point**2+b*max_point:
+                return param_name+":positive"
+            else:
+                return param_name+":negative"
+
+def ols(Y, X):
+    mod = sm.OLS(Y, X)
+    res = mod.fit()
+    #return res.summary()
+    for each in X.columns[1:5]:
+        print effect_analysis(X, res, each)
+
+def ols(Y, X):
+    mod = sm.OLS(Y, X)
+    res = mod.fit()
+    return res.summary()
+
+data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_cppi_bl_step.xlsx")
+data = data[(data['target_ret']!=0.15)&(data['target_ret']!=0.2)]
+
+index_list = []
+ar_duplicated = data['ar'][data['ar'].duplicated()].drop_duplicates()
+av_duplicated = data['av'][data['av'].duplicated()].drop_duplicates()
+md_duplicated = data['md'][data['md'].duplicated()].drop_duplicates()
+for index, row in data.iterrows():
+    if (row['ar'] in list(ar_duplicated)) and (row['av'] in list(av_duplicated)) and (row['md'] in list(md_duplicated)):
+        pass
+    else:
+        index_list.append(index)
+
+data = data.loc[index_list]
+
+for each in data.columns[5:9]:
+    data[each+'2'] = data[each]**2
+
+
+X1 = data[data.columns[5:9]]
+X2 = data[data.columns[5:]]
+X1 = sm.add_constant(X1)
+X2 = sm.add_constant(X2)
+
+
+ols(data['ar'], X1)
+print "--------"
+ols(data['av'], X1)
+print "--------"
+ols(data['md'], X1)
+print "--------"
+ols(data['sr'], X1)
+
+ols(data['ar'], X2)
+print "--------"
+ols(data['av'], X2)
+print "--------"
+ols(data['md'], X2)
+print "--------"
+ols(data['sr'], X2)
+
+print ols(data['ar'], X1)
+print ols(data['ar'], data[data.columns[5:9]])
+print ols(data['md'], X1)
+print ols(data['md'], data[data.columns[5:9]])
+
+test = pd.Series([1,1,1,1,2,3,4])
+3 in test
+
+len(data[data['target_ret']== 0.2])

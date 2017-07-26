@@ -167,7 +167,6 @@ def Backtest_CPPI_BL_step(History_Data, Predict_Data, History_Data_D, asset_list
                 else:
                     pass
 
-
         weight_bl = (weight_bl*asset_position).round(2)
         #print weight_bl
         #print next_date
