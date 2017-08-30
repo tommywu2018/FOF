@@ -48,3 +48,20 @@ test[test==test[(test > test.median())].min()]
 file_path = u'股债_lam3/BL_Weights_234.xlsx'
 nv_frame = list((pd.read_excel(file_path)['return'] + 1).cumprod())
 pd.DataFrame(nv_frame,index=pd.read_excel(file_path).index).plot(legend=False, color='k')
+
+def Performance(return_series, rf_ret):
+    end_value = (return_series + 1).prod()
+    annual_return = (return_series + 1).prod() ** (1/(len(return_series)/12.0)) - 1
+    annual_variance = (return_series.var() * 12.0) ** 0.5
+    sharpe_ratio = (annual_return - rf_ret)/annual_variance
+    max_drawdown = max(((return_series + 1).cumprod().cummax()-(return_series + 1).cumprod())/(return_series + 1).cumprod().cummax())
+    return [end_value, annual_return, annual_variance, sharpe_ratio, max_drawdown]
+
+data = pd.read_excel(u"/Users/WangBin-Mac/FOF/Asset Allocation/History_data.xlsx")
+
+per_list = []
+for each in data.columns:
+    temp_performance = Performance(data[each].dropna(), 0.03)
+    per_list.append(temp_performance)
+
+pd.DataFrame(np.array(per_list), index=data.columns).to_excel(u"/Users/WangBin-Mac/Documents/金建投资/智能投顾/建行智投项目/20170728-项目推进汇报/资产收益特征.xlsx")

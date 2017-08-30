@@ -51,7 +51,7 @@ return_series.quantile(0.10)
 return_series = data["gold"]
 return_series.quantile(0.10)
 
-data = pd.read_excel(u"/Users/WangBin-Mac/Documents/研究生文件/FOF投顾/201707报告/收益分解/nv_index.xlsx")
+data = pd.read_excel(u"/Users/WangBin-Mac/Documents/研究生文件/FOF投顾/201708报告/收益分解/nv_index.xlsx")
 
 return_series = data[u"稳健组合"].pct_change().dropna()
 Performance(return_series, 0.04)
@@ -243,3 +243,50 @@ test = pd.Series([1,1,1,1,2,3,4])
 3 in test
 
 len(data[data['target_ret']== 0.2])
+
+
+import pandas as pd
+import numpy as np
+
+data = pd.read_excel('/Users/WangBin-Mac/FOF/Asset Allocation/History_Data_D.xlsx')
+data2 = pd.read_excel('/Users/WangBin-Mac/Desktop/sz50_D.xlsx')
+
+data = pd.merge(data, pd.DataFrame(data2['000016.SH']/100),left_index=True, right_index=True,how='left')
+
+data.to_excel('/Users/WangBin-Mac/FOF/Asset Allocation/History_Data_D.xlsx')
+
+
+import numpy as np
+import statsmodels.api as sm
+
+def Ms_Simulation(length, p=0.9, q=0.8, mean_p=0.1, mean_q=-0.1, std_p=0.05, std_q=0.15):
+    temp_list = []
+    indicator = 1
+    for i in range(length):
+        if indicator == 1:
+            temp_ran = np.random.uniform(0, 1)
+            if temp_ran <= p:
+                temp_data = np.random.randn() * std_p + mean_p
+            else:
+                temp_data = np.random.randn() * std_q + mean_q
+                indicator = 0
+        else:
+            temp_ran = np.random.uniform(0, 1)
+            if temp_ran <= q:
+                temp_data = np.random.randn() * std_q + mean_q
+            else:
+                temp_data = np.random.randn() * std_p + mean_p
+                indicator = 1
+        temp_list.append(temp_data)
+    return temp_list
+
+data = Ms_Simulation(1000)
+
+ms_model = sm.tsa.MarkovRegression(np.array(data), k_regimes=2, switching_variance=True)
+ms_fit = ms_model.fit()
+ms_fit.smoothed_marginal_probabilities[0]
+ms_fit.initial_probabilities
+ms_fit.params
+ms_fit.regime_transition
+dir(ms_fit)
+print ms_fit.summary()

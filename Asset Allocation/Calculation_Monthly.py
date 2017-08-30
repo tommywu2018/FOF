@@ -4,7 +4,7 @@
 @Time: 2017/1/19 09:30
 """
 
-portfolio_name = u"pingheng"
+portfolio_name = u"jinqu"
 
 from Allocation_Method import Risk_Parity_Weight, Combined_Return_Distribution, Max_Utility_Weight
 import pandas as pd
@@ -12,11 +12,15 @@ import numpy as np
 
 History_Data = pd.read_excel(u"/Users/WangBin-Mac/FOF/Asset Allocation/History_data.xlsx")
 Predict_Data = pd.read_excel(u"//Users/WangBin-Mac/FOF/Asset Allocation/HP_Data.xlsx")
-asset_list = ["bond", "stock_large", "stock_small",
-              "stock_HongKong", "stock_US", "gold"]
+asset_list = ["stock_huge", "stock_large", "stock_small",
+              "stock_US", "stock_HongKong", "bond_whole", "gold"]
 bnds = [(0.0, None), (0.0, None), (0.0, None),
-        (0.0, None), (0.0, None), (0.0, None)]
+        (0.0, None), (0.0, None), (0.0, None), (0.0, None)]
+#asset_list = ["stock_large", "stock_small", "stock_US", "stock_HongKong", "bond_whole", "gold"]
+#bnds = [(0.0, None), (0.0, None), (0.0, None), (0.0, None), (0.0, None), (0.0, None)]
 #bnds = [(0.1, 0.6), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.0, 0.3)]
+asset_list = ["stock_large", "stock_HongKong", "bond_whole"]
+bnds = [(0.0, None), (0.0, None), (0.0, None)]
 
 year_delta = 5
 tau = 1.0
@@ -24,14 +28,16 @@ if portfolio_name == "wenjian":
     lam = 2.3 #进取-1.9 平衡-2.0 稳健-2.3
     money_weight = 0.75
 elif portfolio_name == "pingheng":
-    lam = 2.0
-    money_weight = 0.8
-elif portfolio_name == "jinqu":
-    lam = 1.9
+    lam = 2.1
     money_weight = 0.85
+elif portfolio_name == "jinqu":
+    lam = 2.0
+    money_weight = 0.95
 else:
     raise Exception("Wrong portfolio_name!")
 
+lam = 1.1
+money_weight = 1.0
 
 # 日期设定
 last_date = History_Data.index[-1]  # 当前月份日期
@@ -48,6 +54,10 @@ history_data = History_Data[asset_list][
     str(start_year) + '-' + str(start_month): last_date]
 predict_data = Predict_Data[asset_list][
     str(start_year) + '-' + str(start_month): last_date]
+
+history_data['stock_large'] = history_data['stock_large']*0.79
+predict_data['stock_large'] = predict_data['stock_large']*0.79
+
 cov_mat = history_data[asset_list].cov() * 12.0
 # print cov_mat
 omega = np.matrix(cov_mat.values)
