@@ -12,7 +12,7 @@ from xlwt import Workbook, easyxf
 w.start()
 
 forwardweeks = 54 #数据应包含上周数据及之前52周
-enddate = "2017-08-25"
+enddate = "2017-09-08"
 
 def Wsd_Data_Install_Weekly(code, fields, enddate, forwardweeks):
     temp_data = w.wsd(code, fields, "ED-%sW"%forwardweeks, enddate, "Period=W")

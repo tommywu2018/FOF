@@ -51,7 +51,7 @@ return_series.quantile(0.10)
 return_series = data["gold"]
 return_series.quantile(0.10)
 
-data = pd.read_excel(u"/Users/WangBin-Mac/Documents/研究生文件/FOF投顾/201708报告/收益分解/nv_index.xlsx")
+data = pd.read_excel(u"/Users/WangBin-Mac/Documents/研究生文件/FOF投顾/201709报告/收益分解/nv_index.xlsx")
 
 return_series = data[u"稳健组合"].pct_change().dropna()
 Performance(return_series, 0.04)

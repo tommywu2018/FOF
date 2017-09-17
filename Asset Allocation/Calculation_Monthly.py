@@ -19,8 +19,8 @@ bnds = [(0.0, None), (0.0, None), (0.0, None),
 #asset_list = ["stock_large", "stock_small", "stock_US", "stock_HongKong", "bond_whole", "gold"]
 #bnds = [(0.0, None), (0.0, None), (0.0, None), (0.0, None), (0.0, None), (0.0, None)]
 #bnds = [(0.1, 0.6), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.0, 0.3)]
-asset_list = ["stock_large", "stock_HongKong", "bond_whole"]
-bnds = [(0.0, None), (0.0, None), (0.0, None)]
+#asset_list = ["stock_large", "stock_HongKong", "bond_whole"]
+#bnds = [(0.0, None), (0.0, None), (0.0, None)]
 
 year_delta = 5
 tau = 1.0
@@ -36,8 +36,6 @@ elif portfolio_name == "jinqu":
 else:
     raise Exception("Wrong portfolio_name!")
 
-lam = 1.1
-money_weight = 1.0
 
 # 日期设定
 last_date = History_Data.index[-1]  # 当前月份日期
@@ -54,9 +52,6 @@ history_data = History_Data[asset_list][
     str(start_year) + '-' + str(start_month): last_date]
 predict_data = Predict_Data[asset_list][
     str(start_year) + '-' + str(start_month): last_date]
-
-history_data['stock_large'] = history_data['stock_large']*0.79
-predict_data['stock_large'] = predict_data['stock_large']*0.79
 
 cov_mat = history_data[asset_list].cov() * 12.0
 # print cov_mat

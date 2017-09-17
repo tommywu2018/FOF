@@ -218,7 +218,7 @@ def Xls_Writer_pctchg_Simple(ws, data, all_data, rowno, colno, field):
 
 
 forwardmonths = 37 #数据应包含上月数据及之前36月
-enddate = "2017-06-30"
+enddate = "2017-08-31"
 
 '''
 格式定义

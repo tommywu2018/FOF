@@ -3,7 +3,7 @@
 @author: Wang Bin
 """
 
-portfolio_name = u"004"
+portfolio_name = u"001"
 
 from Allocation_Method import Risk_Parity_Weight, Min_Variance_Weight, Combined_Return_Distribution, Max_Sharpe_Weight, Max_Utility_Weight, Inverse_Minimize
 import pandas as pd

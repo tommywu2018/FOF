@@ -2,55 +2,46 @@
 
 import numpy as np
 import pandas as pd
+import copy
 from WindPy import *
 w.start()
 
 file_dir = u"Z:\\Mac 上的 WangBin-Mac\\"
-start_date = "2014-08-16"
-end_date = "2017-08-22"
+start_date = "2014-01-01"
+interrupt_date_1 = "2016-12-31"
+interrupt_date_2 = "2017-01-01"
+end_date = "2017-09-01"
 
 index_list = ["H11025.CSI", "038.CS", "066.CS", "000300.SH", "000905.SH", "HSI.HI", "SPX.GI", "AU9999.SGE", "885064.WI"]
 index_name = ["money_fund", "bond_rate", "bond_credit", "stock_A_large", "stock_A_small", "stock_HongKong", "stock_US", "gold", "hedge_fund"]
 
-ETF_list = []
-fund_list = []
+product_index_map = {
+"money":["money_fund"],
+"bond":["bond_rate", "bond_credit"],
+"domestic_stock":["stock_A_large", "stock_A_small"],
+"foreign_stock":["stock_HongKong", "stock_US"],
+"alternative":["gold", "hedge_fund"]
+}
 
-index_data = w.wsd(index_list, "close", start_date, end_date, "Days=Alldays")
+index_sub_product_map = {
+"money_fund":["000621.OF","003164.OF","000709.OF","200103.OF","002912.OF","37001B.OF"],
+"bond_rate":["000174.OF","519669.OF","001776.OF","002756.OF","050027.OF","128013.OF"],
+"bond_credit":["000174.OF","519669.OF","001776.OF","002756.OF","050027.OF","128013.OF"],
+"stock_A_large":["159919.OF","510330.OF","159925.OF","159927.OF","510360.OF"],
+"stock_A_small":["510500.OF","159922.OF","510510.OF","159935.OF","510440.OF","000478.OF"],
+"stock_HongKong":["159920.OF","164705.OF","513600.OF","513660.OF"],
+"stock_US":["040046.OF","159941.OF","000834.OF","513500.OF","096001.OF"],
+"gold":["518800.OF","518880.OF","159934.OF"],
+"hedge_fund":["000844.OF","000753.OF","001073.OF","000414.OF","000667.OF"]
+}
+
+test = []
+for each in index_sub_product_map:
+    test = test + index_sub_product_map[each]
+
+index_data = w.wsd(index_list, "close", start_date, interrupt_date_1, "Days=Alldays")
 print index_data.ErrorCode
 index_data = pd.DataFrame(np.array(index_data.Data).T, index=index_data.Times, columns=index_name)
-index_data.index = index_data.index.strftime('%Y-%m-%d')
-index_data.to_csv(file_dir+"index.csv")
-
-etf_data = w.wsd(index_list, "close", start_date, end_date, "Days=Alldays")
-print etf_data.ErrorCode
-etf_data = pd.DataFrame(np.array(etf_data.Data).T, index=etf_data.Times, columns=ETF_list)
-etf_data.index = etf_data.index.strftime('%Y-%m-%d')
-
-fund_data = w.wsd(fund_list, "NAV_adj", start_date, end_date, "Days=Alldays")
-print fund_data.ErrorCode
-fund_data = pd.DataFrame(np.array(fund_data.Data).T, index=fund_data.Times, columns=fund_list)
-fund_data.index = fund_data.index.strftime("%Y-%m-%d")
-
-sub_product_data = pd.merge(etf_data, fund_data, left_index=True, right_index=True)
-
-money_product_position = pd.read_excel(file_dir+"money_product_position.xlsx")
-bond_product_position = pd.read_excel(file_dir+"bond_product_position.xlsx")
-domestic_stock_product_position = pd.read_excel(file_dir+"domestic_stock_product_position.xlsx")
-foreign_stock_position = pd.read_excel(file_dir+"foreign_stock_product_position.xlsx")
-alternative_product_position = pd.read_excel(file_dir+"alternative_product_position.xlsx")
-
-product_data = pd.DataFrame()
-product_data['money_product'] = (money_product_position * sub_product_data[money_product_position.columns]).sum(axis=1)
-product_data['bond_product'] = (bond_product_position * sub_product_data[bond_product_position.columns]).sum(axis=1)
-product_data['domestic_stock_product'] = (domestic_stock_product_position * sub_product_data[domestic_stock_product_position.columns]).sum(axis=1)
-product_data['foreign_stock_product'] = (foreign_stock_product_position * sub_product_data[foreign_stock_product_position.columns]).sum(axis=1)
-product_data['alternative_product'] = (alternative_product_position * sub_product_data[alternative_product_position.columns]).sum(axis=1)
-
-
-tdata = np.array(range(9)).reshape(3,3)
-test1 = pd.DataFrame(tdata, index=[1,2,3], columns=['a','b','c'])
-test2 = pd.DataFrame(tdata, index=[1,2,3], columns=['a','b','c'])
-(test1*test2).sum(axis=1)
-
-test3 = pd.DataFrame()
-test3['a'] = (test1*test2).sum(axis=1)
+index_data_s = copy.deepcopy(index_data)
+index_data_s.index = index_data_s.index.strftime('%Y/%m/%d')
+index_data_s.to_excel(file_dir+"index.xlsx")
