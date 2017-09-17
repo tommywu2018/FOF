@@ -42,7 +42,7 @@ def Cushion_Cal(nv, nv_threshold, rf_ret, target_ret):
     return cushion/nv
 
 
-def Backtest_CPPI_BL_step(History_Data, Predict_Data, History_Data_D, asset_list, risk_list, year_delta, portfolio_name, money_weight, up_per, target_ret, multiplier, max_risk_weight):
+def Backtest_CPPI_BL_step(History_Data, Predict_Data, History_Data_D, asset_list, risk_list, bnds, asset_level_1, asset_level_2, year_delta, portfolio_name, money_weight, up_per, target_ret, multiplier, max_risk_weight):
 
     tau = 1.0
     if portfolio_name == "wenjian":
@@ -190,10 +190,11 @@ def Performance(return_series, rf_ret):
     max_drawdown = max(((return_series + 1).cumprod().cummax()-(return_series + 1).cumprod())/(return_series + 1).cumprod().cummax())
     return [end_value, annual_return, annual_variance, sharpe_ratio, max_drawdown]
 
-def Conduct(up_per, target_ret, multiplier, max_risk_weight):
-    temp_series = Backtest_CPPI_BL_step(History_Data, Predict_Data, History_Data_D, asset_list, risk_list, 5, "wenjian", 1.00, up_per, target_ret, multiplier, max_risk_weight)
+def Conduct(History_Data, Predict_Data, History_Data_D, asset_list, risk_list, bnds, asset_level_1, asset_level_2, year_delta, portfolio_name, money_weight, up_per, target_ret, multiplier, max_risk_weight):
+    temp_series = Backtest_CPPI_BL_step(History_Data, Predict_Data, History_Data_D, asset_list, risk_list, bnds, asset_level_1, asset_level_2, year_delta, portfolio_name, money_weight, up_per, target_ret, multiplier, max_risk_weight)
     temp_performance = Performance(temp_series, 0.025)
     performance_list = temp_performance+[up_per, target_ret, multiplier, max_risk_weight]
+    print [up_per, target_ret, multiplier, max_risk_weight]
     return performance_list
 
 def test(para_1, para_2, para_3, para_4):
@@ -213,65 +214,65 @@ for each_file in file_name_list:
 
 pd.DataFrame(np.array(result_list).T, index=['end_value', 'annual_return', 'annual_variance', 'sharpe_ratio', 'max_drawdown'], columns=['wenjian', 'pingheng', 'jinqu', 'wenjian_f', 'pingheng_f', 'jinqu_f']).to_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_results.xlsx")
 '''
+if __name__ == '__main__':
+    portfolio_name = u"wenjian"
 
-portfolio_name = u"wenjian"
+    '''
+    History_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/History_Data.xlsx")
+    Predict_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/Predict_Data.xlsx")
+    History_Data_D = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/History_Data_D.xlsx")
+    asset_list = ["bond_whole", "stock_large", "stock_small",
+                  "stock_HongKong", "stock_US", "gold"]
+    risk_list = ["stock_large", "stock_small",
+                  "stock_HongKong", "stock_US", "gold"]
+    bnds = [(0.0, None), (0.0, None), (0.0, None),
+            (0.0, None), (0.0, None)]
+    asset_level_1 = pd.Series([-0.01, -0.08, -0.08, -0.08, -0.08, -0.08], index=asset_list)
+    asset_level_2 = pd.Series([-0.02, -0.16, -0.16, -0.16, -0.16, -0.16], index=asset_list)
+    #asset_level_1 = pd.Series([-1.0]*len(asset_list), index=asset_list)
+    #asset_level_2 = pd.Series([-1.0]*len(asset_list), index=asset_list)
+    #bnds = [(0.1, 0.6), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.0, 0.3)]
+    '''
 
-'''
-History_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/History_Data.xlsx")
-Predict_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/Predict_Data.xlsx")
-History_Data_D = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/History_Data_D.xlsx")
-asset_list = ["bond_whole", "stock_large", "stock_small",
-              "stock_HongKong", "stock_US", "gold"]
-risk_list = ["stock_large", "stock_small",
-              "stock_HongKong", "stock_US", "gold"]
-bnds = [(0.0, None), (0.0, None), (0.0, None),
-        (0.0, None), (0.0, None)]
-asset_level_1 = pd.Series([-0.01, -0.08, -0.08, -0.08, -0.08, -0.08], index=asset_list)
-asset_level_2 = pd.Series([-0.02, -0.16, -0.16, -0.16, -0.16, -0.16], index=asset_list)
-#asset_level_1 = pd.Series([-1.0]*len(asset_list), index=asset_list)
-#asset_level_2 = pd.Series([-1.0]*len(asset_list), index=asset_list)
-#bnds = [(0.1, 0.6), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.05, 0.2), (0.0, 0.3)]
-'''
+    #美国实际数据
+    History_Data = pd.read_excel("F:\\GitHub\\FOF\\Asset Allocation\\SBG_US_M.xlsx")
+    Predict_Data = pd.read_excel("F:\\GitHub\\FOF\\Asset Allocation\\SBG_US_M_P.xlsx")
+    History_Data_D = pd.read_excel("F:\\GitHub\\FOF\\Asset Allocation\\SBG_US_M.xlsx")
+    asset_list = [ "Barclays_US_bond", "SP500", "London_gold"]
+    risk_list = ["SP500", "London_gold"]
 
-#美国实际数据
-History_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/SBG_US_M.xlsx")
-Predict_Data = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/SBG_US_M_P.xlsx")
-History_Data_D = pd.read_excel("/Users/WangBin-Mac/FOF/Asset Allocation/SBG_US_M.xlsx")
-asset_list = [ "Barclays_US_bond", "SP500", "London_gold"]
-risk_list = ["SP500", "London_gold"]
-
-bnds = [(0.0, None), (0.0, None)]
-#bnds = [(0.0, None), (0.0, None), (0.0, None)]
-asset_level_1 = pd.Series([-0.01, -0.08, -0.08], index=asset_list)
-asset_level_2 = pd.Series([-0.02, -0.16, -0.16], index=asset_list)
+    bnds = [(0.0, None), (0.0, None)]
+    #bnds = [(0.0, None), (0.0, None), (0.0, None)]
+    asset_level_1 = pd.Series([-0.01, -0.08, -0.08], index=asset_list)
+    asset_level_2 = pd.Series([-0.02, -0.16, -0.16], index=asset_list)
 
 
-up_per_list = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
-target_ret_list = [-0.5, -0.4, -0.3, -0.2, -0.1, 0.00, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2]
-multiplier_list = [1, 2, 3, 4, 5]
-max_risk_weight_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    up_per_list = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+    target_ret_list = [-0.5, -0.4, -0.3, -0.2, -0.1, 0.00, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2]
+    multiplier_list = [1, 2, 3, 4, 5]
+    max_risk_weight_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    '''
+    up_per_list = [0.1]
+    target_ret_list = [-0.5]
+    multiplier_list = [1]
+    max_risk_weight_list = [0.1, 0.2]
+    '''
+    pool = multiprocessing.Pool(processes=10)
+    performance_list = []
+    performance_array = []
+    para_list = []
+    for up_per in up_per_list:
+        for target_ret in target_ret_list:
+            for multiplier in multiplier_list:
+                for max_risk_weight in max_risk_weight_list:
+                    performance_list.append(pool.apply_async(Conduct, (History_Data, Predict_Data, History_Data_D, asset_list, risk_list, bnds, asset_level_1, asset_level_2, 5, "wenjian", 1.00, up_per, target_ret, multiplier, max_risk_weight, )))
 
-up_per_list = [0.1]
-target_ret_list = [-0.5]
-multiplier_list = [1]
-max_risk_weight_list = [0.1, 0.2]
+    pool.close()
+    pool.join()
 
-pool = multiprocessing.Pool(processes=2)
-performance_list = []
-performance_array = []
-para_list = []
-for up_per in up_per_list:
-    for target_ret in target_ret_list:
-        for multiplier in multiplier_list:
-            for max_risk_weight in max_risk_weight_list:
-                performance_list.append(pool.apply_async(Conduct, (up_per, target_ret, multiplier, max_risk_weight, )))
+    for res in performance_list:
+        temp = res.get()
+        performance_array.append(temp)
+        para_list.append("up_per=%s \ntarget_ret=%s \nmultiplier=%s \nmax_risx_weight=%s\n"%tuple(temp[5:]))
 
-pool.close()
-pool.join()
-
-for res in performance_list:
-    temp = res.get()
-    performance_array.append(temp)
-    para_list.append("up_per=%s \ntarget_ret=%s \nmultiplier=%s \nmax_risx_weight=%s\n"%tuple(temp[5:]))
-
-pd.DataFrame(np.array(performance_array).T, index=['nv', 'ar', 'av', 'sr', 'md', 'up_per', 'target_ret', 'multiplier', 'max_risk_weight'], columns=para_list).to_excel("/Users/WangBin-Mac/FOF/Asset Allocation/backtest_cppi_bl_step.xlsx")
+    pd.DataFrame(np.array(performance_array), columns=['nv', 'ar', 'av', 'sr', 'md', 'up_per', 'target_ret', 'multiplier', 'max_risk_weight'], index=para_list).to_excel("F:\\GitHub\\FOF\\Asset Allocation\\backtest_cppi_bl_step.xlsx")
