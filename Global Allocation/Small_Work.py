@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from statsmodels.multivariate.pca import PCA
 
+mac_path = "/Users/WangBin-Mac/FOF/Global Allocation/"
+pc_path = "F:/GitHub/FOF/Global Allocation/"
+path = pc_path
+
 
 Barclays_US_bond = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_bond.xlsx")
 BloomBerg_commodity = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/BloomBerg_commodity.xlsx")
@@ -35,7 +39,7 @@ data = pd.merge(data, London_gold, how='outer', left_index=True, right_index=Tru
 #data_M[['SP500', 'MSCI_global']].corr().iloc[1,0]
 
 
-data.resample("M").last().pct_change().to_excel("/Users/WangBin-Mac/FOF/Global Allocation/All_Assets_M.xlsx")
+data.resample("M").last().pct_change().to_excel(path+"All_Assets_M.xlsx")
 def Rolling_Correlation(df, lags):
     corr_list = list()
     for i in range(lags-1, len(df)):
@@ -43,7 +47,7 @@ def Rolling_Correlation(df, lags):
         corr_list.append(temp_df.corr().iloc[0,1])
     return pd.DataFrame(corr_list, index=df.index[lags-1:], columns=[df.columns[0]+'*'+df.columns[1]])
 
-data_M = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/All_Assets_M.xlsx")
+data_M = pd.read_excel(path+"All_Assets_M.xlsx")
 correl_frame = pd.DataFrame()
 for each_i in data_M.columns:
     for each_j in data_M.columns[list(data_M.columns).index(each_i)+1:]:
