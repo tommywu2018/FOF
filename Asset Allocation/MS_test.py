@@ -167,13 +167,13 @@ def Comparance(file_path, return_data):
     bm_per.append(nega_percent)
     return pd.DataFrame(np.array([ms_per, bm_per]).T, columns=[file_path[-8:-4] + "_ms", file_path[-8:-4] + "_bm"], index=['end_value', 'annual_return', 'annual_variance', 'sharpe_ratio', 'max_drawdown', 'turnover', 'profit%', 're-profit%', 'posi%', 'nega%'])
 
-return_data = pd.read_excel("F:\GitHub\FOF\Global Allocation\SBG_US_M.xlsx").interpolate().dropna().pct_change().dropna()
+return_data = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SBG_US_M.xlsx").interpolate().dropna().pct_change().dropna()
 
 data = pd.read_excel("F:\GitHub\FOF\Asset Allocation\stock_bond_gold_CN.xlsx")
 return_data = (data/100+1).resample("M").prod().dropna()-1
 
 
-Comparance("F:\GitHub\FOF\MU_CN.csv", return_data).to_clipboard()
+Comparance("/Users/WangBin-Mac/FOF/RP_6_2001.csv", return_data).to_clipboard()
 
 data = pd.read_csv(u"/Users/WangBin-Mac/Documents/研究生文件/asset allocation regime shift/MS结果/10-00.csv", parse_dates=True, index_col=['Unnamed: 0'])
 
