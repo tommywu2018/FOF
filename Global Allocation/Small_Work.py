@@ -4,26 +4,32 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
+import socket
 from statsmodels.multivariate.pca import PCA
 
-mac_path = "/Users/WangBin-Mac/FOF/Global Allocation/"
-pc_path = "F:/GitHub/FOF/Global Allocation/"
-path = pc_path
+
+hostname = socket.gethostname()
+if hostname == "DESKTOP-OGC5NH7":
+    path = "E:/GitHub/FOF/Global Allocation/"
+elif hostname == "localhost":
+    path = "/Users/WangBin-Mac/FOF/Global Allocation/"
+elif hostname == "":
+    path = "F:/GitHub/FOF/Global Allocation/"
 
 
-Barclays_US_bond = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_bond.xlsx")
-BloomBerg_commodity = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/BloomBerg_commodity.xlsx")
-FTSE_global_REITs = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/FTSE_global_REITs.xlsx")
-London_gold = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/London_gold.xlsx")
-MSCI_US_REITs = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/MSCI_US_REITs.xlsx")
-MSCI_emerging = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/MSCI_emerging.xlsx")
-MSCI_global = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/MSCI_global.xlsx")
-SP500 = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/SP500.xlsx")
-Barclays_US_HY = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_HY.xlsx")
+Barclays_US_bond = pd.read_excel(path+"Barclays_US_bond.xlsx")
+BloomBerg_commodity = pd.read_excel(path+"BloomBerg_commodity.xlsx")
+FTSE_global_REITs = pd.read_excel(path+"FTSE_global_REITs.xlsx")
+London_gold = pd.read_excel(path+"London_gold.xlsx")
+MSCI_US_REITs = pd.read_excel(path+"MSCI_US_REITs.xlsx")
+MSCI_emerging = pd.read_excel(path+"MSCI_emerging.xlsx")
+MSCI_global = pd.read_excel(path+"MSCI_global.xlsx")
+SP500 = pd.read_excel(path+"SP500.xlsx")
+Barclays_US_HY = pd.read_excel(path+"Barclays_US_HY.xlsx")
 #Barclays_US_HY.resample("M").last().to_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_HY.xlsx")
-Barclays_US_CB = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_CB.xlsx")
+Barclays_US_CB = pd.read_excel(path+"Barclays_US_CB.xlsx")
 #Barclays_US_CB.resample("M").last().to_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_CB.xlsx")
-Barclays_US_Treasury = pd.read_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_Treasury.xlsx")
+Barclays_US_Treasury = pd.read_excel(path+"Barclays_US_Treasury.xlsx")
 #Barclays_US_Treasury.resample("M").last().to_excel("/Users/WangBin-Mac/FOF/Global Allocation/Barclays_US_Treasury.xlsx")
 
 data = pd.merge(Barclays_US_bond, Barclays_US_Treasury, how='outer', left_index=True, right_index=True)
@@ -55,7 +61,7 @@ for each_i in data_M.columns:
         temp_corr = Rolling_Correlation(temp_data, 24)
         correl_frame = pd.merge(correl_frame, temp_corr, how='outer', left_index=True, right_index=True)
 
-correl_frame.to_excel("/Users/WangBin-Mac/FOF/Global Allocation/All_Assets_correlframe.xlsx")
+correl_frame.to_excel(path+"All_Assets_correlframe.xlsx")
 correl_frame.mean()[correl_frame.mean() > 0.8]
 correl_frame.plot.violin()
 plt.show()
@@ -124,7 +130,7 @@ for i in range(0,11):
             plt.violinplot(np.array(correl_frame[temp_name].dropna()), showmeans=True, vert=True)
             plt.hlines(0, 0, 2, colors='r', linestyles='dashed')
 #plt.show()
-fig.savefig("/Users/WangBin-Mac/FOF/Global Allocation/All_Assets_correl.png")
+fig.savefig(path+"All_Assets_correl.png")
 
 
 
