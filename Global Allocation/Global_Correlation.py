@@ -54,6 +54,7 @@ def Rolling_Correlation(df, lags):
     return pd.DataFrame(corr_list, index=df.index[lags-1:], columns=[df.columns[0]+'*'+df.columns[1]])
 
 data_M = pd.read_excel(path+"All_Assets_M.xlsx")
+data_M.corr()
 correl_frame = pd.DataFrame()
 for each_i in data_M.columns:
     for each_j in data_M.columns[list(data_M.columns).index(each_i)+1:]:
@@ -150,17 +151,11 @@ for each in correl_frame.max().index:
     correl_max_frame[name_list[0]][name_list[1]] = correl_frame.max()[each]
 
 "ab*cd".split("*")
-correl_mean = correl_frame.mean(axis=1)
-correl_mean.plot()
-plt.show()
 
-correl_mean = pd.DataFrame(correl_mean, columns=['corr_mean'])
-correl_frame = pd.merge(correl_frame, correl_mean, how='outer', left_index=True, right_index=True)
-
-correl_frame.corr()['corr_mean']
 
 
 each = correl_frame.columns[1]
+results_frame = list()
 for each in correl_frame.columns[:-2]:
     temp_data = correl_frame[[each, 'corr_mean']].dropna()
     X = temp_data['corr_mean']
@@ -168,5 +163,161 @@ for each in correl_frame.columns[:-2]:
     y = temp_data[each]
     model = sm.OLS(y, X)
     results = model.fit()
-    if (results.params[1] < 0) or (results.pvalues[1] >= 0.05):
-        print each
+    #print type(results.params)
+    #print type(results.pvalues)
+    #print type(results.rsquared)
+    results_list = list(results.params) + list(results.pvalues) + [results.rsquared]
+    results_frame.append(results_list)
+pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-2],columns=['c','b','p_c','p_b','r2']).to_excel(path+'corrmean_reg_nb.xlsx')
+    #if (results.params[1] < 0) or (results.pvalues[1] >= 0.05):
+        #print each
+data_M.columns
+column_list = ['Barclays_US_bond','Barclays_US_HY','SP500','MSCI_US_REITs','MSCI_emerging','BloomBerg_comodity','London_gold']
+column_list_nb = ['Barclays_US_HY','SP500','MSCI_US_REITs','MSCI_emerging','BloomBerg_comodity','London_gold'] #nb=no bond
+
+correl_frame = pd.DataFrame()
+data_m = data_M[column_list]
+for each_i in data_m.columns:
+    for each_j in data_m.columns[list(data_m.columns).index(each_i)+1:]:
+        temp_data = data_M[[each_i, each_j]].dropna()
+        temp_corr = Rolling_Correlation(temp_data, 24)
+        correl_frame = pd.merge(correl_frame, temp_corr, how='outer', left_index=True, right_index=True)
+correl_frame.to_excel(path+"Selected_Assets_correlframe.xlsx")
+
+correl_mean = correl_frame.mean(axis=1)
+#correl_mean.plot()
+#plt.show()
+
+correl_mean = pd.DataFrame(correl_mean, columns=['corr_mean'])
+correl_frame = pd.merge(correl_frame, correl_mean, how='outer', left_index=True, right_index=True)
+
+results_frame = list()
+for each in correl_frame.columns[:-2]:
+    temp_data = correl_frame[[each, 'corr_mean']].dropna()
+    X = temp_data['corr_mean']
+    X = sm.add_constant(X)
+    y = temp_data[each]
+    model = sm.OLS(y, X)
+    results = model.fit()
+    #print type(results.params)
+    #print type(results.pvalues)
+    #print type(results.rsquared)
+    results_list = list(results.params) + list(results.pvalues) + [results.rsquared]
+    results_frame.append(results_list)
+pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-2],columns=['c','b','p_c','p_b','r2']).to_excel(path+'sel_corrmean_reg_nb.xlsx')
+
+correl_pca = PCA(correl_frame[correl_frame.columns[:-2]].dropna())
+dir(correl_pca)
+correl_pca.rsquare
+correl_pca.factors['comp_00']
+correl_pca = pd.DataFrame(correl_pca.factors['comp_00'].values, index=correl_frame.dropna().index, columns=['corr_pca'])
+correl_frame = pd.merge(correl_frame, correl_pca, how='outer', left_index=True, right_index=True)
+correl_frame.corr()['corr_pca']
+
+results_frame = list()
+for each in correl_frame.columns[:-3]:
+    temp_data = correl_frame[[each, 'corr_pca']].dropna()
+    X = temp_data['corr_pca']
+    X = sm.add_constant(X)
+    y = temp_data[each]
+    model = sm.OLS(y, X)
+    results = model.fit()
+    #print type(results.params)
+    #print type(results.pvalues)
+    #print type(results.rsquared)
+    results_list = list(results.params) + list(results.pvalues) + [results.rsquared]
+    results_frame.append(results_list)
+pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-3],columns=['c','b','p_c','p_b','r2']).to_excel(path+'sel_corrpca_reg_nb.xlsx')
+
+correl_frame = pd.DataFrame()
+data_m_nb = data_M[column_list_nb]
+for each_i in data_m_nb.columns:
+    for each_j in data_m_nb.columns[list(data_m_nb.columns).index(each_i)+1:]:
+        temp_data = data_m_nb[[each_i, each_j]].dropna()
+        temp_corr = Rolling_Correlation(temp_data, 24)
+        correl_frame = pd.merge(correl_frame, temp_corr, how='outer', left_index=True, right_index=True)
+correl_frame.to_excel(path+"Selected_Assets_correlframe_nb.xlsx")
+
+correl_mean = correl_frame.mean(axis=1)
+#correl_mean.plot()
+#plt.show()
+
+correl_mean = pd.DataFrame(correl_mean, columns=['corr_mean'])
+correl_frame = pd.merge(correl_frame, correl_mean, how='outer', left_index=True, right_index=True)
+
+results_frame = list()
+for each in correl_frame.columns[:-2]:
+    temp_data = correl_frame[[each, 'corr_mean']].dropna()
+    X = temp_data['corr_mean']
+    X = sm.add_constant(X)
+    y = temp_data[each]
+    model = sm.OLS(y, X)
+    results = model.fit()
+    #print type(results.params)
+    #print type(results.pvalues)
+    #print type(results.rsquared)
+    results_list = list(results.params) + list(results.pvalues) + [results.rsquared]
+    results_frame.append(results_list)
+pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-2],columns=['c','b','p_c','p_b','r2']).to_excel(path+'corrmean_reg_nb.xlsx')
+
+correl_pca = PCA(correl_frame[correl_frame.columns[:-2]].dropna())
+dir(correl_pca)
+correl_pca.rsquare
+correl_pca.factors['comp_00']
+correl_pca = pd.DataFrame(correl_pca.factors['comp_00'].values, index=correl_frame.dropna().index, columns=['corr_pca'])
+correl_frame = pd.merge(correl_frame, correl_pca, how='outer', left_index=True, right_index=True)
+correl_frame.corr()['corr_pca']
+
+results_frame = list()
+for each in correl_frame.columns[:-3]:
+    temp_data = correl_frame[[each, 'corr_pca']].dropna()
+    X = temp_data['corr_pca']
+    X = sm.add_constant(X)
+    y = temp_data[each]
+    model = sm.OLS(y, X)
+    results = model.fit()
+    #print type(results.params)
+    #print type(results.pvalues)
+    #print type(results.rsquared)
+    results_list = list(results.params) + list(results.pvalues) + [results.rsquared]
+    results_frame.append(results_list)
+pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-3],columns=['c','b','p_c','p_b','r2']).to_excel(path+'corrpca_reg_nb.xlsx')
+
+test_frame = pd.DataFrame(np.array([np.random.normal(0,1,100),np.random.normal(0,1,100),np.random.normal(0,1,100)]).T)
+data_frame = test_frame
+
+def Global_Correlation(data_frame):
+    cov_frame = data_frame.cov()
+    cov_matrix = np.matrix(cov_frame)
+    sum_var = np.sum(cov_matrix.diagonal())
+    sum_cov = np.sum(cov_matrix) - sum_var
+    n = len(cov_frame)
+    global_correlation = (sum_cov/(n*(n-1)))/(sum_var/n)
+    return global_correlation
+
+data_D = data.pct_change()
+data_D.to_excel(path+"All_Assets_D.xlsx")
+column_list = ['Barclays_US_bond','SP500','MSCI_US_REITs','MSCI_emerging','BloomBerg_comodity','London_gold']
+column_list_nb = ['SP500','MSCI_US_REITs','MSCI_emerging','BloomBerg_comodity','London_gold']
+data_d = data_D[column_list].dropna()
+data_d.to_excel(path+"Selected_Assets_D.xlsx")
+
+gc_list = list()
+returns_list = list()
+b = 0.2
+for i in range(50,len(data_d)):
+    temp_data = data_d.iloc[(i-49):(i-1),]
+    weights = np.array([1.0/len(temp_data.columns)]*len(temp_data.columns))
+    gc = Global_Correlation(temp_data)
+    orgin_return = np.sum(data_d.iloc[i,] * weights)
+    new_return = min((b/gc),1)*orgin_return
+    returns_list.append([orgin_return, new_return])
+    gc_list.append(gc)
+
+pd.Series(gc_list).plot()
+plt.show()
+np.mean(gc_list)
+
+(pd.DataFrame(np.array(returns_list))+1).product()
+min(0.2,1)
+pd.DataFrame(np.array(returns_list)).to_clipboard()
