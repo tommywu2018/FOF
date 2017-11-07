@@ -184,6 +184,7 @@ for each_i in data_m.columns:
         correl_frame = pd.merge(correl_frame, temp_corr, how='outer', left_index=True, right_index=True)
 correl_frame.to_excel(path+"Selected_Assets_correlframe.xlsx")
 
+correl_frame = pd.read_excel(path+"Selected_Assets_correlframe.xlsx")
 correl_mean = correl_frame.mean(axis=1)
 #correl_mean.plot()
 #plt.show()
@@ -205,6 +206,27 @@ for each in correl_frame.columns[:-2]:
     results_list = list(results.params) + list(results.pvalues) + [results.rsquared]
     results_frame.append(results_list)
 pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-2],columns=['c','b','p_c','p_b','r2']).to_excel(path+'sel_corrmean_reg_nb.xlsx')
+
+panel_data = list()
+for each in correl_frame.columns[:-2]:
+    temp_panel = pd.DataFrame(columns=['y','x']+column_list)
+    temp_data = correl_frame[[each, 'corr_mean']].dropna()
+    temp_panel['y'] = temp_data[each]
+    temp_panel['x'] = temp_data['corr_mean']
+    for each_i in column_list:
+        if each_i in each.split("*"):
+            temp_panel[each_i] = 1
+        else:
+            temp_panel[each_i] = 0
+    panel_data = panel_data + list(temp_panel.values)
+
+panel_frame = pd.DataFrame(np.array(panel_data),columns=['y','x']+column_list)
+X = panel_frame[['x']+column_list]
+y = panel_frame['y']
+model = sm.OLS(y, X)
+results = model.fit()
+
+
 
 correl_pca = PCA(correl_frame[correl_frame.columns[:-2]].dropna())
 dir(correl_pca)
@@ -229,6 +251,29 @@ for each in correl_frame.columns[:-3]:
     results_frame.append(results_list)
 pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-3],columns=['c','b','p_c','p_b','r2']).to_excel(path+'sel_corrpca_reg_nb.xlsx')
 
+panel_data = list()
+for each in correl_frame.columns[:-2]:
+    temp_panel = pd.DataFrame(columns=['y','x']+column_list)
+    temp_data = correl_frame[[each, 'corr_pca']].dropna()
+    temp_panel['y'] = temp_data[each]
+    temp_panel['x'] = temp_data['corr_pca']
+    for each_i in column_list:
+        if each_i in each.split("*"):
+            temp_panel[each_i] = 1
+        else:
+            temp_panel[each_i] = 0
+    panel_data = panel_data + list(temp_panel.values)
+
+panel_frame = pd.DataFrame(np.array(panel_data),columns=['y','x']+column_list)
+X = panel_frame[['x']+column_list]
+y = panel_frame['y']
+model = sm.OLS(y, X)
+results = model.fit()
+results.params
+results.pvalues
+results.rsquared
+
+column_list_nb = ['Barclays_US_HY','SP500','MSCI_US_REITs','MSCI_emerging','BloomBerg_comodity','London_gold']
 correl_frame = pd.DataFrame()
 data_m_nb = data_M[column_list_nb]
 for each_i in data_m_nb.columns:
@@ -242,6 +287,7 @@ correl_mean = correl_frame.mean(axis=1)
 #correl_mean.plot()
 #plt.show()
 
+correl_frame = pd.read_excel(path+"Selected_Assets_correlframe_nb.xlsx")
 correl_mean = pd.DataFrame(correl_mean, columns=['corr_mean'])
 correl_frame = pd.merge(correl_frame, correl_mean, how='outer', left_index=True, right_index=True)
 
@@ -259,6 +305,29 @@ for each in correl_frame.columns[:-2]:
     results_list = list(results.params) + list(results.pvalues) + [results.rsquared]
     results_frame.append(results_list)
 pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-2],columns=['c','b','p_c','p_b','r2']).to_excel(path+'corrmean_reg_nb.xlsx')
+
+panel_data = list()
+for each in correl_frame.columns[:-2]:
+    temp_panel = pd.DataFrame(columns=['y','x']+column_list_nb)
+    temp_data = correl_frame[[each, 'corr_mean']].dropna()
+    temp_panel['y'] = temp_data[each]
+    temp_panel['x'] = temp_data['corr_mean']
+    for each_i in column_list_nb:
+        if each_i in each.split("*"):
+            temp_panel[each_i] = 1
+        else:
+            temp_panel[each_i] = 0
+    panel_data = panel_data + list(temp_panel.values)
+
+panel_frame = pd.DataFrame(np.array(panel_data),columns=['y','x']+column_list_nb)
+X = panel_frame[['x']+column_list_nb]
+y = panel_frame['y']
+model = sm.OLS(y, X)
+results = model.fit()
+results.params
+results.pvalues
+results.rsquared
+
 
 correl_pca = PCA(correl_frame[correl_frame.columns[:-2]].dropna())
 dir(correl_pca)
@@ -283,8 +352,27 @@ for each in correl_frame.columns[:-3]:
     results_frame.append(results_list)
 pd.DataFrame(np.array(results_frame),index=correl_frame.columns[:-3],columns=['c','b','p_c','p_b','r2']).to_excel(path+'corrpca_reg_nb.xlsx')
 
-test_frame = pd.DataFrame(np.array([np.random.normal(0,1,100),np.random.normal(0,1,100),np.random.normal(0,1,100)]).T)
-data_frame = test_frame
+panel_data = list()
+for each in correl_frame.columns[:-2]:
+    temp_panel = pd.DataFrame(columns=['y','x']+column_list_nb)
+    temp_data = correl_frame[[each, 'corr_pca']].dropna()
+    temp_panel['y'] = temp_data[each]
+    temp_panel['x'] = temp_data['corr_pca']
+    for each_i in column_list_nb:
+        if each_i in each.split("*"):
+            temp_panel[each_i] = 1
+        else:
+            temp_panel[each_i] = 0
+    panel_data = panel_data + list(temp_panel.values)
+
+panel_frame = pd.DataFrame(np.array(panel_data),columns=['y','x']+column_list_nb)
+X = panel_frame[['x']+column_list_nb]
+y = panel_frame['y']
+model = sm.OLS(y, X)
+results = model.fit()
+results.params
+results.pvalues
+results.rsquared
 
 def Global_Correlation(data_frame):
     cov_frame = data_frame.cov()
@@ -295,23 +383,40 @@ def Global_Correlation(data_frame):
     global_correlation = (sum_cov/(n*(n-1)))/(sum_var/n)
     return global_correlation
 
+def Corr_Mean(data_frame):
+    corr_frame = data_frame.corr()
+    corr_matrix = np.matrix(corr_frame)
+    sum_corr = np.sum(corr_matrix)
+    n = len(corr_frame)
+    corr_mean = (sum_corr-n)/(n*(n-1))
+    return corr_mean
+
+
 data_D = data.pct_change()
 data_D.to_excel(path+"All_Assets_D.xlsx")
+
+data_D = pd.read_excel(path+"All_Assets_D.xlsx")
 column_list = ['Barclays_US_bond','SP500','MSCI_US_REITs','MSCI_emerging','BloomBerg_comodity','London_gold']
 column_list_nb = ['SP500','MSCI_US_REITs','MSCI_emerging','BloomBerg_comodity','London_gold']
 data_d = data_D[column_list].dropna()
+data_d = data_D[column_list_nb].dropna()
 data_d.to_excel(path+"Selected_Assets_D.xlsx")
 
 gc_list = list()
 returns_list = list()
-b = 0.2
+b = 0.13
 for i in range(50,len(data_d)):
     temp_data = data_d.iloc[(i-49):(i-1),]
     weights = np.array([1.0/len(temp_data.columns)]*len(temp_data.columns))
-    gc = Global_Correlation(temp_data)
+    #gc = Global_Correlation(temp_data)
+    gc = Corr_Mean(temp_data)
     orgin_return = np.sum(data_d.iloc[i,] * weights)
-    new_return = min((b/gc),1)*orgin_return
-    returns_list.append([orgin_return, new_return])
+    if gc > 0:
+        multiplier = min(0.13/gc,2)
+    else:
+        multiplier = 2
+    new_return = multiplier*orgin_return
+    returns_list.append([orgin_return, new_return, multiplier])
     gc_list.append(gc)
 
 pd.Series(gc_list).plot()
@@ -321,3 +426,4 @@ np.mean(gc_list)
 (pd.DataFrame(np.array(returns_list))+1).product()
 min(0.2,1)
 pd.DataFrame(np.array(returns_list)).to_clipboard()
+pd.DataFrame(np.array(returns_list)).cov()
